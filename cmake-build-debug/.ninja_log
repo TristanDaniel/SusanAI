@@ -1,0 +1,24 @@
+# ninja log v5
+1	492	7206538465191690	CMakeFiles/SusanAI.dir/main.cpp.obj	ee0c6fb63aa5536
+2	210	7209412327760683	build.ninja	c85895d50dc143f7
+947	1121	7206611590896069	SusanAI.exe	cb6344d622001644
+5	517	7209411247694664	CMakeFiles/SusanAI.dir/Synapses.cpp.obj	a6d524f76dde4345
+17	851	7209411251034522	CMakeFiles/SusanAI.dir/SusanAI.cpp.obj	797c63360f38f8a3
+5	1067	7209411757183291	CMakeFiles/SusanAI.dir/Nodes.cpp.obj	da275332ab4ed5b2
+38	690	7209411249421898	CMakeFiles/SusanAI.dir/Handlers.cpp.obj	83e854e453850443
+31	146	7209412686612038	CMakeFiles/SusanAI.dir/Structures.cpp.obj	20398ad2ea037e53
+14	449	7209412689753887	CMakeFiles/SusanAI.dir/Synapses.cpp.obj	a6d524f76dde4345
+39	600	7209412691269428	CMakeFiles/SusanAI.dir/Handlers.cpp.obj	83e854e453850443
+30	133	7209417324425181	CMakeFiles/SusanAI.dir/Structures.cpp.obj	20398ad2ea037e53
+14	421	7209417327299262	CMakeFiles/SusanAI.dir/Synapses.cpp.obj	a6d524f76dde4345
+21	549	7209417328549975	CMakeFiles/SusanAI.dir/Handlers.cpp.obj	83e854e453850443
+4	688	7209417329959967	CMakeFiles/SusanAI.dir/SusanAI.cpp.obj	797c63360f38f8a3
+38	1102	7209417334085500	CMakeFiles/SusanAI.dir/Nodes.cpp.obj	da275332ab4ed5b2
+4	102	7209417733459440	CMakeFiles/SusanAI.dir/Structures.cpp.obj	20398ad2ea037e53
+102	319	7209417735520154	SusanAI.exe	ad7e2b457b4b7f6d
+195	650	7210880546230446	CMakeFiles/SusanAI.dir/Structures.cpp.obj	20398ad2ea037e53
+150	964	7210880549349321	CMakeFiles/SusanAI.dir/Synapses.cpp.obj	a6d524f76dde4345
+179	1172	7210880551396456	CMakeFiles/SusanAI.dir/Handlers.cpp.obj	83e854e453850443
+8	1370	7210880553410190	CMakeFiles/SusanAI.dir/SusanAI.cpp.obj	797c63360f38f8a3
+169	1990	7210880559556395	CMakeFiles/SusanAI.dir/Nodes.cpp.obj	da275332ab4ed5b2
+1991	2557	7210880565172512	SusanAI.exe	ad7e2b457b4b7f6d
