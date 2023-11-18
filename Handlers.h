@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "Nodes.h"
+#include "Synapses.h"
 
 namespace Handlers{
 
@@ -21,6 +22,25 @@ namespace Handlers{
 
         void addNode(Nodes::Node* n);
         void removeNodeByID(int id);
+
+        unsigned int getNextID();
+    };
+
+    class SynapseHandler {
+
+    protected:
+        unsigned int nextID { 0 };
+
+        std::vector<Synapses::Synapse*> synapses;
+
+    public:
+
+        SynapseHandler() = default;
+
+        void InitHandler();
+
+        void addSynapse(Synapses::Synapse* s);
+        void removeSynapseByID(int id);
 
         unsigned int getNextID();
     };

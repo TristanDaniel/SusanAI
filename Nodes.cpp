@@ -19,8 +19,8 @@ using Nodes::Output;
 using Flags::NodeFlag;
 
 
-Node::Node(unsigned int i, float v) : Structures::Part(i), value(v) {}
-Input::Input(unsigned int i, float v) : Node(i, v) {}
+Node::Node(unsigned int i) : Structures::Part(i) {}
+Input::Input(unsigned int i) : Node(i) {}
 
 float NotInputNode::getValue() {
 
@@ -110,7 +110,12 @@ float RandomInput::getValueInLoop(std::unordered_map<int, char> statChecks) { re
 
 void Node::setValue(float v) { value = v; }
 
-void Node::setFlags(std::vector<Flags::NodeFlag> f) { flags = std::move(f); }
+void Node::setFlags(std::vector<Flags::NodeFlag> f) {
+
+    for (NodeFlag flag : f) {
+        addFlag(flag);
+    }
+}
 void Node::addFlag(Flags::NodeFlag f) {
     switch (f) {
         case NodeFlag::IGNORE_ON_CYCLE:
@@ -160,8 +165,8 @@ float RandomInput::genBounded(float min, float max) { return randFloat(min, max)
 float RandomInput::genBoundedInts(int min, int max) { return randInt(min, max); }
 
 
-RandomInput::RandomInput(unsigned int i, int m) : Input(i, 0), mode(m), minimum(0), maximum(1) { srand(time(0)); }
-RandomInput::RandomInput(unsigned int i, int m, float min, float max) : Input(i, 0), mode(m) {
+RandomInput::RandomInput(unsigned int i, int m) : Input(i), mode(m), minimum(0), maximum(1) { srand(time(0)); }
+RandomInput::RandomInput(unsigned int i, int m, float min, float max) : Input(i), mode(m) {
 	srand(time(0));
 	
 	if (min < max) {

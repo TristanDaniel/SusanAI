@@ -2,5 +2,8 @@
 
 namespace LemonDrop {
 
+    class Controller {
+
+    };
 
 }

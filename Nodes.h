@@ -24,12 +24,12 @@ namespace Nodes {
         std::unordered_map<int, char> synCheckStatus;
 
         Flags::NodeFlag cycleFlag = Flags::NodeFlag::PARTIAL_ON_CYCLE;
-        std::vector<Flags::NodeFlag> flags;
+        //std::vector<Flags::NodeFlag> flags;
 
 	public:
 		
 		Node()= default;
-		Node(unsigned int i, float v);
+		Node(unsigned int i);
 
 		virtual float getValue() = 0;
 		void setValue(float v);
@@ -56,7 +56,7 @@ namespace Nodes {
 	class Input : public Node {
 
 	public:
-        Input(unsigned int i, float v);
+        Input(unsigned int i);
 
 		float getValue() override;
 	};
