@@ -29,7 +29,7 @@ namespace Nodes {
 	public:
 		
 		Node()= default;
-		Node(unsigned int i);
+		explicit Node(unsigned int i);
 
 		virtual float getValue() = 0;
 		void setValue(float v);
@@ -49,6 +49,8 @@ namespace Nodes {
 
 	class NotInputNode : public Node {
 	public:
+        explicit NotInputNode(unsigned int i) : Node(i) {};
+
 		float getValue() override;
         float getValueInLoop(std::unordered_map<int, char> statChecks) override;
 	};
@@ -56,7 +58,7 @@ namespace Nodes {
 	class Input : public Node {
 
 	public:
-        Input(unsigned int i);
+        explicit Input(unsigned int i);
 
 		float getValue() override;
 	};
@@ -105,6 +107,9 @@ namespace Nodes {
 	class Output : public NotInputNode {
 
 	public:
+
+        explicit Output(unsigned int i) : NotInputNode(i) {}
+
 		virtual void getOutput();
 	};
 }

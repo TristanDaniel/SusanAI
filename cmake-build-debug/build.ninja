@@ -79,6 +79,12 @@ build CMakeFiles/SusanAI.dir/Structures.cpp.obj: CXX_COMPILER__SusanAI_unscanned
   OBJECT_DIR = CMakeFiles\SusanAI.dir
   OBJECT_FILE_DIR = CMakeFiles\SusanAI.dir
 
+build CMakeFiles/SusanAI.dir/LemonDrop.cpp.obj: CXX_COMPILER__SusanAI_unscanned_Debug C$:/Users/tdani7/CLionProjects/SusanAI/LemonDrop.cpp || cmake_object_order_depends_target_SusanAI
+  DEP_FILE = CMakeFiles\SusanAI.dir\LemonDrop.cpp.obj.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  OBJECT_DIR = CMakeFiles\SusanAI.dir
+  OBJECT_FILE_DIR = CMakeFiles\SusanAI.dir
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target SusanAI
@@ -87,7 +93,7 @@ build CMakeFiles/SusanAI.dir/Structures.cpp.obj: CXX_COMPILER__SusanAI_unscanned
 #############################################
 # Link the executable SusanAI.exe
 
-build SusanAI.exe: CXX_EXECUTABLE_LINKER__SusanAI_Debug CMakeFiles/SusanAI.dir/SusanAI.cpp.obj CMakeFiles/SusanAI.dir/Synapses.cpp.obj CMakeFiles/SusanAI.dir/Nodes.cpp.obj CMakeFiles/SusanAI.dir/Handlers.cpp.obj CMakeFiles/SusanAI.dir/Structures.cpp.obj
+build SusanAI.exe: CXX_EXECUTABLE_LINKER__SusanAI_Debug CMakeFiles/SusanAI.dir/SusanAI.cpp.obj CMakeFiles/SusanAI.dir/Synapses.cpp.obj CMakeFiles/SusanAI.dir/Nodes.cpp.obj CMakeFiles/SusanAI.dir/Handlers.cpp.obj CMakeFiles/SusanAI.dir/Structures.cpp.obj CMakeFiles/SusanAI.dir/LemonDrop.cpp.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\SusanAI.dir

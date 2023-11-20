@@ -23,6 +23,8 @@ namespace Handlers{
         void addNode(Nodes::Node* n);
         void removeNodeByID(int id);
 
+        Nodes::Node* getNodeByID(unsigned int id);
+
         unsigned int getNextID();
     };
 
@@ -41,6 +43,8 @@ namespace Handlers{
 
         void addSynapse(Synapses::Synapse* s);
         void removeSynapseByID(int id);
+
+        Synapses::Synapse* getSynapseByID(unsigned int id);
 
         unsigned int getNextID();
     };

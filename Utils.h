@@ -9,3 +9,27 @@ namespace Flags {
     };
 
 }
+
+namespace ParamPackages {
+
+    union NodeParams {
+        struct BasicNodeParams {
+            // No params needed for basic node yet
+        } basicNodeParams;
+
+        struct RandInputParams {
+            int mode = 0;
+            float min = 0, max = 0;
+        } randInputParams;
+    };
+
+    union SynapseParams {
+        struct PassthroughSynapseParams {
+
+        } passthroughSynapseParams;
+
+        struct WeightedSynapseParams {
+            float weight;
+        } weightedSynapseParams;
+    };
+}
