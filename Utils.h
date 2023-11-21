@@ -21,6 +21,10 @@ namespace ParamPackages {
             int mode = 0;
             float min = 0, max = 0;
         } randInputParams;
+
+        NodeParams() {
+
+        }
     };
 
     union SynapseParams {
@@ -29,7 +33,11 @@ namespace ParamPackages {
         } passthroughSynapseParams;
 
         struct WeightedSynapseParams {
-            float weight;
+            float weight = 0;
         } weightedSynapseParams;
+
+        SynapseParams() {
+
+        }
     };
 }

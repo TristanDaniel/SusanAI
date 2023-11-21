@@ -7,7 +7,8 @@ namespace LemonDrop {
 
     class Controller {
 
-    protected:
+    public:
+    //protected:
 
         Handlers::NodeHandler nodes;
         Handlers::NodeHandler outputs;
@@ -30,7 +31,7 @@ namespace LemonDrop {
         void mainLoop();
 
 
-    public:
+    //public:
         Controller() = default;
     };
 
