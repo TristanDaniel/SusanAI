@@ -32,8 +32,6 @@ namespace LemonDrop {
 
     public:
         Controller() = default;
-
-
     };
 
 }

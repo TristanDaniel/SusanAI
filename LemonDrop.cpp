@@ -1,4 +1,7 @@
 
+#include <windows.h>
+#include <unistd.h>
+
 #include "LemonDrop.h"
 #include "Utils.h"
 
@@ -48,15 +51,82 @@ bool Controller::newOutput(unsigned int type, ParamPackages::NodeParams params) 
     switch (type) {
         case 0:
             //basic output
-            id = outputs.getNextID();
+            id = nodes.getNextID();
 
             n = new Nodes::Output(id);
 
             outputs.addNode(n);
+            nodes.addNode(n);
 
             return true;
 
         default:
             return false;
+    }
+}
+
+bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams params) {
+    unsigned int id;
+    Synapses::Synapse* s;
+
+    switch (type) {
+        case 0:
+            //passthrough
+            id = synapses.getNextID();
+
+            s = new Synapses::PassthroughSynapse(id);
+
+            synapses.addSynapse(s);
+
+            return true;
+
+        case 1:
+        {
+            //weighted
+            id = synapses.getNextID();
+            float weight = params.weightedSynapseParams.weight;
+
+            s = new Synapses::WeightedSynapse(id, weight);
+
+            synapses.addSynapse(s);
+
+            return true;
+        }
+
+        default:
+            return false;
+
+
+    }
+}
+
+bool Controller::addSynapseToNode(unsigned int synID, unsigned int nodeID) {
+    Synapses::Synapse* synapse = synapses.getSynapseByID(synID);
+    Nodes::Node* node = nodes.getNodeByID(nodeID);
+
+    node->addSynapse(synapse);
+
+    return true;
+}
+
+bool Controller::addNodeToSynapse(unsigned int nodeID, unsigned int synID) {
+    Synapses::Synapse* synapse = synapses.getSynapseByID(synID);
+    Nodes::Node* node = nodes.getNodeByID(nodeID);
+
+    synapse->setInput(node);
+
+    return true;
+}
+
+void Controller::getAllOutputs() {
+    for (auto* output : outputs.getNodes()) {
+        ((Nodes::Output*)output)->getOutput();
+    }
+}
+
+void Controller::mainLoop() {
+    while (true) {
+        getAllOutputs();
+        sleep(1);
     }
 }

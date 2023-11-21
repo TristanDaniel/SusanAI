@@ -9,7 +9,7 @@ using namespace Synapses;
 
 int main()
 {
-	Output o = Output();
+	Output o = Output(0);
 	Synapse* syn = new WeightedSynapse(0, new RandomInput(0, 4, 5, 10), 0.5);
 
 	o.addSynapse(syn);

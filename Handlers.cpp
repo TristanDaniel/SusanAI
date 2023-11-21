@@ -27,6 +27,10 @@ Nodes::Node* NodeHandler::getNodeByID(unsigned int id) {
 
 unsigned int NodeHandler::getNextID() { return nextID++; }
 
+std::vector<Nodes::Node*> NodeHandler::getNodes() {
+    return nodes;
+}
+
 void SynapseHandler::InitHandler() {
     nextID = 0;
 

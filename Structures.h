@@ -12,8 +12,8 @@ namespace Structures {
 
         Part();
 
-        Part(unsigned int i);
+        explicit Part(unsigned int i);
 
-        unsigned int getID() { return ID; }
+        unsigned int getID() const { return ID; }
     };
 }

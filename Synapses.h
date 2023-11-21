@@ -8,18 +8,18 @@ namespace Synapses {
     class Synapse {
 
 	protected:
-		int id{ 0 };
+		unsigned int id{ 0 };
 
 		Nodes::Node* input{};
 
 	public:
 
 		Synapse() = default;
-		explicit Synapse(int i) : id(i) {}
-		Synapse(int i, Nodes::Node* inNode) : id(i), input(inNode) {}
+		explicit Synapse(unsigned int i) : id(i) {}
+		Synapse(unsigned int i, Nodes::Node* inNode) : id(i), input(inNode) {}
 
         virtual float getData() = 0;
-		[[nodiscard]] int getID() const;
+		[[nodiscard]] unsigned int getID() const;
 
 		void setInput(Nodes::Node* n);
 
@@ -31,8 +31,8 @@ namespace Synapses {
     public:
 
         PassthroughSynapse() = default;
-        explicit PassthroughSynapse(int i);
-        PassthroughSynapse(int i, Nodes::Node* inNode);
+        explicit PassthroughSynapse(unsigned int i);
+        PassthroughSynapse(unsigned int i, Nodes::Node* inNode);
 
         float getData() override;
     };
@@ -45,8 +45,9 @@ namespace Synapses {
 	public:
 
 		WeightedSynapse() = default;
-		explicit WeightedSynapse(int i);
-		WeightedSynapse(int i, Nodes::Node* inNode, float w);
+		explicit WeightedSynapse(unsigned int i);
+        WeightedSynapse(unsigned int i, float w);
+		WeightedSynapse(unsigned int i, Nodes::Node* inNode, float w);
 
 		float getData() override;
 	};

@@ -26,6 +26,8 @@ namespace Handlers{
         Nodes::Node* getNodeByID(unsigned int id);
 
         unsigned int getNextID();
+
+        std::vector<Nodes::Node*> getNodes();
     };
 
     class SynapseHandler {

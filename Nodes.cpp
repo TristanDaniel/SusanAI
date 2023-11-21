@@ -181,7 +181,7 @@ RandomInput::RandomInput(unsigned int i, int m, float min, float max) : Input(i)
 
 void Output::getOutput() {
 	value = getValue();
-	cout << value << endl;
+	cout << "Output " << getID() << ": " << value << endl;
 }
 
 

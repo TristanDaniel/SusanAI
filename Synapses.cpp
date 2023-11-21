@@ -5,11 +5,12 @@ using Synapses::Synapse;
 using Synapses::PassthroughSynapse;
 using Synapses::WeightedSynapse;
 
-PassthroughSynapse::PassthroughSynapse(int i) { id = i; }
-PassthroughSynapse::PassthroughSynapse(int i, Nodes::Node *inNode) { id = i; input = inNode; }
+PassthroughSynapse::PassthroughSynapse(unsigned int i) { id = i; }
+PassthroughSynapse::PassthroughSynapse(unsigned int i, Nodes::Node *inNode) { id = i; input = inNode; }
 
-WeightedSynapse::WeightedSynapse(int i) { id = i; }
-WeightedSynapse::WeightedSynapse(int i, Nodes::Node* inNode, float w) : weight(w) { id = i; input = inNode; }
+WeightedSynapse::WeightedSynapse(unsigned int i) { id = i; }
+WeightedSynapse::WeightedSynapse(unsigned int i, float w) : weight(w)  { id = i; }
+WeightedSynapse::WeightedSynapse(unsigned int i, Nodes::Node* inNode, float w) : weight(w) { id = i; input = inNode; }
 
 
 float PassthroughSynapse::getData() {
@@ -21,7 +22,7 @@ float WeightedSynapse::getData() {
 }
 
 
-int Synapse::getID() const { return id; }
+unsigned int Synapse::getID() const { return id; }
 
 void Synapse::setInput(Nodes::Node* n) { input = n; }
 
