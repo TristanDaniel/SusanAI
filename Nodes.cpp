@@ -184,4 +184,22 @@ void Output::getOutput() {
 	cout << "Output " << getID() << ": " << value << endl;
 }
 
+string Node::getFlagListString() {
+    string s;
 
+    s += to_string((int)cycleFlag);
+
+    return s;
+}
+
+string NotInputNode::saveNode() {
+    return "+n,0," + to_string(getID()) + "," + getFlagListString() + ",";
+}
+
+string Input::saveNode() {
+    return "+n,1," + to_string(getID()) + "," + getFlagListString() + ",";
+}
+
+string RandomInput::saveNode() {
+    return "+n,2," + to_string(getID()) + "," + getFlagListString() + ".";
+}

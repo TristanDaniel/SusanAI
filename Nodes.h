@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <string>
 
 #include "Structures.h"
 #include "Utils.h"
@@ -26,6 +27,8 @@ namespace Nodes {
         Flags::NodeFlag cycleFlag = Flags::NodeFlag::PARTIAL_ON_CYCLE;
         //std::vector<Flags::NodeFlag> flags;
 
+        std::string getFlagListString();
+
 	public:
 		
 		Node()= default;
@@ -45,6 +48,8 @@ namespace Nodes {
 
 		void addSynapse(Synapses::Synapse* syn);
 		void removeSynapse(Synapses::Synapse* syn);
+
+        virtual std::string saveNode() = 0;
 	};
 
 	class NotInputNode : public Node {
@@ -53,6 +58,8 @@ namespace Nodes {
 
 		float getValue() override;
         float getValueInLoop(std::unordered_map<int, char> statChecks) override;
+
+        std::string saveNode() override;
 	};
 
 	class Input : public Node {
@@ -61,6 +68,8 @@ namespace Nodes {
         explicit Input(unsigned int i);
 
 		float getValue() override;
+
+        std::string saveNode() override;
 	};
 
 	class RandomInput : public Input {
@@ -102,6 +111,7 @@ namespace Nodes {
 		float getValue() override;
         float getValueInLoop(std::unordered_map<int, char> statChecks) override;
 
+        std::string saveNode() override;
 	};
 
 	class Output : public NotInputNode {

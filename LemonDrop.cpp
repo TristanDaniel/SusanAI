@@ -1,6 +1,7 @@
 
 #include <windows.h>
 #include <unistd.h>
+#include <iostream>
 
 #include "LemonDrop.h"
 #include "Utils.h"
@@ -126,6 +127,8 @@ void Controller::getAllOutputs() {
 
 void Controller::mainLoop() {
     while (true) {
+        std::cout << std::to_string((int)Flags::NodeFlag::PARTIAL_ON_CYCLE);
+
         getAllOutputs();
         sleep(1);
     }
