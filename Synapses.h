@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "Nodes.h"
 
 namespace Synapses {
@@ -23,6 +25,8 @@ namespace Synapses {
 
 		void setInput(Nodes::Node* n);
 
+        virtual std::string saveSynapse() = 0;
+
 		bool operator==(const Synapse& s) const;
 	};
 
@@ -35,6 +39,8 @@ namespace Synapses {
         PassthroughSynapse(unsigned int i, Nodes::Node* inNode);
 
         float getData() override;
+
+        std::string  saveSynapse() override;
     };
 
 	class WeightedSynapse : public Synapse {
@@ -50,6 +56,8 @@ namespace Synapses {
 		WeightedSynapse(unsigned int i, Nodes::Node* inNode, float w);
 
 		float getData() override;
+
+        std::string  saveSynapse() override;
 	};
 	
 }
