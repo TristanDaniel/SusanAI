@@ -2,11 +2,20 @@
 #include <windows.h>
 #include <unistd.h>
 #include <iostream>
+#include <fstream>
 
 #include "LemonDrop.h"
 #include "Utils.h"
 
+using namespace std;
+
 using LemonDrop::Controller;
+
+Controller::Controller() {
+    nodes.InitHandler();
+    outputs.InitHandler();
+    synapses.InitHandler();
+}
 
 bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
@@ -15,6 +24,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
     switch (type) {
         case 0:
+        {
             //basic node
             id = nodes.getNextID();
 
@@ -22,9 +32,20 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             nodes.addNode(n);
 
+            n->addFlag(params.basicNodeParams.cycleFlag);
+
+            saveActionToFile(n->saveNode());
+
             return true;
+        }
 
         case 1:
+        {
+            //basic input
+
+        }
+
+        case 2:
         {
             //Random input
             id = nodes.getNextID();
@@ -34,6 +55,10 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
             float max = params.randInputParams.max;
 
             n = new Nodes::RandomInput(id, mode, min, max);
+
+            n->addFlag(params.randInputParams.cycleFlag);
+
+            saveActionToFile(n->saveNode());
 
             nodes.addNode(n);
 
@@ -51,6 +76,7 @@ bool Controller::newOutput(unsigned int type, ParamPackages::NodeParams params) 
 
     switch (type) {
         case 0:
+        {
             //basic output
             id = nodes.getNextID();
 
@@ -60,6 +86,8 @@ bool Controller::newOutput(unsigned int type, ParamPackages::NodeParams params) 
             nodes.addNode(n);
 
             return true;
+        }
+
 
         default:
             return false;
@@ -72,6 +100,7 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
 
     switch (type) {
         case 0:
+        {
             //passthrough
             id = synapses.getNextID();
 
@@ -80,6 +109,8 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
             synapses.addSynapse(s);
 
             return true;
+        }
+
 
         case 1:
         {
@@ -116,6 +147,8 @@ bool Controller::addNodeToSynapse(unsigned int nodeID, unsigned int synID) {
 
     synapse->setInput(node);
 
+
+
     return true;
 }
 
@@ -125,7 +158,7 @@ void Controller::getAllOutputs() {
     }
 }
 
-void Controller::mainLoop() {
+[[noreturn]] void Controller::mainLoop() {
     while (true) {
         std::cout << std::to_string((int)Flags::NodeFlag::PARTIAL_ON_CYCLE);
 
@@ -133,3 +166,29 @@ void Controller::mainLoop() {
         sleep(1);
     }
 }
+
+void Controller::saveActionToFile(std::string s) {
+    std::ofstream saveFile("controller.lds", std::ios::app);
+
+    if (saveFile.is_open()) {
+        saveFile << s;
+        saveFile.close();
+    } else std::cout << "WARN: save file not found, network won't be saved properly!";
+}
+
+void Controller::loadFromFile() {
+    std::ifstream loadFile ("controller.lds");
+
+
+}
+
+
+
+
+
+
+
+
+
+
+

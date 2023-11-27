@@ -26,7 +26,7 @@ float NotInputNode::getValue() {
 
     // If the map isn't empty, it means we reached this point in a cycle
     if (!synCheckStatus.empty()) {
-        unordered_map<int, char> nm;
+        unordered_map<unsigned int, char> nm;
         nm = synCheckStatus;
         float val = getValueInLoop(nm);
         synCheckStatus = nm;
@@ -59,7 +59,7 @@ float NotInputNode::getValue() {
 
 }
 
-float NotInputNode::getValueInLoop(unordered_map<int, char> statChecks) {
+float NotInputNode::getValueInLoop(unordered_map<unsigned int, char> statChecks) {
     switch (cycleFlag) {
         case NodeFlag::IGNORE_ON_CYCLE:
             return 0;
@@ -106,7 +106,7 @@ float RandomInput::getValue() {
 	}
 }
 
-float RandomInput::getValueInLoop(std::unordered_map<int, char> statChecks) { return 0; }
+float RandomInput::getValueInLoop(std::unordered_map<unsigned int, char> statChecks) { return 0; }
 
 void Node::setValue(float v) { value = v; }
 
@@ -187,19 +187,24 @@ void Output::getOutput() {
 string Node::getFlagListString() {
     string s;
 
-    s += to_string((int)cycleFlag);
+    s += to_string((int)cycleFlag) + ",";
 
     return s;
 }
 
 string NotInputNode::saveNode() {
-    return "+n,0," + to_string(getID()) + "," + getFlagListString() + ",";
+    return "+n,0," + to_string(getID()) + "," + getFlagListString();
 }
 
 string Input::saveNode() {
-    return "+n,1," + to_string(getID()) + "," + getFlagListString() + ",";
+    return "+n,1," + to_string(getID()) + "," + getFlagListString();
 }
 
 string RandomInput::saveNode() {
-    return "+n,2," + to_string(getID()) + "," + getFlagListString() + ".";
+    return "+n,2," + to_string(getID()) + "," + getFlagListString()
+    + to_string(mode) + "," + to_string(minimum) + "," + to_string(maximum) + ",";
+}
+
+string Output::saveNode() {
+    return "+n,3," + to_string(getID()) + "," + getFlagListString();
 }

@@ -26,6 +26,7 @@ namespace Handlers{
         Nodes::Node* getNodeByID(unsigned int id);
 
         unsigned int getNextID();
+        void checkID(unsigned int id);
 
         std::vector<Nodes::Node*> getNodes();
     };
@@ -49,5 +50,6 @@ namespace Handlers{
         Synapses::Synapse* getSynapseByID(unsigned int id);
 
         unsigned int getNextID();
+        void checkID(unsigned int id);
     };
 }

@@ -22,7 +22,7 @@ namespace Nodes {
 		float value{ 0 }, lastValue{ 0 };
 		std::vector<Synapses::Synapse*> synapses{};
 
-        std::unordered_map<int, char> synCheckStatus;
+        std::unordered_map<unsigned int, char> synCheckStatus;
 
         Flags::NodeFlag cycleFlag = Flags::NodeFlag::PARTIAL_ON_CYCLE;
         //std::vector<Flags::NodeFlag> flags;
@@ -42,7 +42,7 @@ namespace Nodes {
         void removeFlag(Flags::NodeFlag f);
         //bool hasFlag(Flags::NodeFlag f);
 
-        virtual float getValueInLoop(std::unordered_map<int, char> statChecks) = 0;
+        virtual float getValueInLoop(std::unordered_map<unsigned int, char> statChecks) = 0;
 
         float getLastValue() const;
 
@@ -57,7 +57,7 @@ namespace Nodes {
         explicit NotInputNode(unsigned int i) : Node(i) {};
 
 		float getValue() override;
-        float getValueInLoop(std::unordered_map<int, char> statChecks) override;
+        float getValueInLoop(std::unordered_map<unsigned int, char> statChecks) override;
 
         std::string saveNode() override;
 	};
@@ -109,7 +109,7 @@ namespace Nodes {
 		RandomInput(unsigned int i, int m, float min, float max);
 
 		float getValue() override;
-        float getValueInLoop(std::unordered_map<int, char> statChecks) override;
+        float getValueInLoop(std::unordered_map<unsigned int, char> statChecks) override;
 
         std::string saveNode() override;
 	};
@@ -121,5 +121,7 @@ namespace Nodes {
         explicit Output(unsigned int i) : NotInputNode(i) {}
 
 		virtual void getOutput();
+
+        std::string saveNode() override;
 	};
 }

@@ -52,3 +52,8 @@ Synapses::Synapse* SynapseHandler::getSynapseByID(unsigned int id) {
 }
 
 unsigned int SynapseHandler::getNextID() { return nextID++; }
+
+void NodeHandler::checkID(unsigned int id) { if (id > nextID) nextID = id; }
+void SynapseHandler::checkID(unsigned int id) { if (id > nextID) nextID = id; }
+
+

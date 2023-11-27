@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "Handlers.h"
 #include "Utils.h"
 
@@ -7,8 +9,7 @@ namespace LemonDrop {
 
     class Controller {
 
-    public:
-    //protected:
+    protected:
 
         Handlers::NodeHandler nodes;
         Handlers::NodeHandler outputs;
@@ -28,11 +29,14 @@ namespace LemonDrop {
 
         void getAllOutputs();
 
-        void mainLoop();
+        [[noreturn]] void mainLoop();
+
+        void saveActionToFile(std::string s);
+        void loadFromFile();
 
 
-    //public:
-        Controller() = default;
+    public:
+        Controller();
     };
 
 }
