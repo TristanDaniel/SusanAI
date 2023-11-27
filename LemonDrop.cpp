@@ -42,7 +42,17 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
         case 1:
         {
             //basic input
+            id = nodes.getNextID();
 
+            n = new Nodes::Input(id);
+
+            n->setValue(params.basicNodeParams.value);
+
+            nodes.addNode(n);
+
+            saveActionToFile(n->saveNode());
+
+            return true;
         }
 
         case 2:
@@ -63,6 +73,11 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
             nodes.addNode(n);
 
             return true;
+        }
+
+        case 3:
+        {
+
         }
 
         default:

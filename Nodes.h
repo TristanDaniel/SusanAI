@@ -68,6 +68,7 @@ namespace Nodes {
         explicit Input(unsigned int i);
 
 		float getValue() override;
+        float getValueInLoop(std::unordered_map<unsigned int, char> statChecks) override;
 
         std::string saveNode() override;
 	};

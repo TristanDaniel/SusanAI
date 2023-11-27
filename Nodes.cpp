@@ -106,6 +106,7 @@ float RandomInput::getValue() {
 	}
 }
 
+float Input::getValueInLoop(std::unordered_map<unsigned int, char> statChecks) { return 0; }
 float RandomInput::getValueInLoop(std::unordered_map<unsigned int, char> statChecks) { return 0; }
 
 void Node::setValue(float v) { value = v; }
@@ -197,7 +198,7 @@ string NotInputNode::saveNode() {
 }
 
 string Input::saveNode() {
-    return "+n,1," + to_string(getID()) + "," + getFlagListString();
+    return "+n,1," + to_string(getID()) + "," + getFlagListString() + to_string(getValue()) + ",";
 }
 
 string RandomInput::saveNode() {
