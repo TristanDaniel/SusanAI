@@ -30,9 +30,9 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             n = new Nodes::NotInputNode(id);
 
-            nodes.addNode(n);
-
             n->addFlag(params.basicNodeParams.cycleFlag);
+
+            nodes.addNode(n);
 
             saveActionToFile(n->saveNode());
 
@@ -68,16 +68,11 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             n->addFlag(params.randInputParams.cycleFlag);
 
-            saveActionToFile(n->saveNode());
-
             nodes.addNode(n);
 
+            saveActionToFile(n->saveNode());
+
             return true;
-        }
-
-        case 3:
-        {
-
         }
 
         default:
@@ -97,12 +92,15 @@ bool Controller::newOutput(unsigned int type, ParamPackages::NodeParams params) 
 
             n = new Nodes::Output(id);
 
+            n->addFlag(params.basicNodeParams.cycleFlag);
+
             outputs.addNode(n);
             nodes.addNode(n);
 
+            saveActionToFile(n->saveNode());
+
             return true;
         }
-
 
         default:
             return false;
@@ -123,6 +121,8 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
 
             synapses.addSynapse(s);
 
+            saveActionToFile(s->saveSynapse());
+
             return true;
         }
 
@@ -136,6 +136,8 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
             s = new Synapses::WeightedSynapse(id, weight);
 
             synapses.addSynapse(s);
+
+            saveActionToFile(s->saveSynapse());
 
             return true;
         }
@@ -152,6 +154,8 @@ bool Controller::addSynapseToNode(unsigned int synID, unsigned int nodeID) {
     Nodes::Node* node = nodes.getNodeByID(nodeID);
 
     node->addSynapse(synapse);
+
+    saveActionToFile(">sn,");
 
     return true;
 }
@@ -182,7 +186,7 @@ void Controller::getAllOutputs() {
     }
 }
 
-void Controller::saveActionToFile(std::string s) {
+void Controller::saveActionToFile(const std::string& s) {
     std::ofstream saveFile("controller.lds", std::ios::app);
 
     if (saveFile.is_open()) {

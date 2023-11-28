@@ -31,8 +31,8 @@ namespace LemonDrop {
 
         [[noreturn]] void mainLoop();
 
-        void saveActionToFile(std::string s);
-        void loadFromFile();
+        static void saveActionToFile(const std::string& s);
+        static void loadFromFile();
 
 
     public:
