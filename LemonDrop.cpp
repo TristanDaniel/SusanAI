@@ -17,8 +17,8 @@ Controller::Controller() {
     outputs.InitHandler();
     synapses.InitHandler();
 
-    std::ofstream saveFile("..\\controller.lsv");
-    saveFile.close();
+//    std::ofstream saveFile("..\\controller.lsv");
+//    saveFile.close();
 
     initController();
     mainLoop();
@@ -156,24 +156,24 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
     }
 }
 
-bool Controller::addSynapseToNode(unsigned int synID, unsigned int nodeID) {
+bool Controller::addSynapseToNode(unsigned int synID, unsigned int nodeID, bool loading) {
     Synapses::Synapse* synapse = synapses.getSynapseByID(synID);
     Nodes::Node* node = nodes.getNodeByID(nodeID);
 
     node->addSynapse(synapse);
 
-    saveActionToFile(">sn," + to_string(synID) + "," + to_string(nodeID) + ",");
+    if (!loading) saveActionToFile(">sn " + to_string(synID) + " " + to_string(nodeID) + " ");
 
     return true;
 }
 
-bool Controller::addNodeToSynapse(unsigned int nodeID, unsigned int synID) {
+bool Controller::addNodeToSynapse(unsigned int nodeID, unsigned int synID, bool loading) {
     Synapses::Synapse* synapse = synapses.getSynapseByID(synID);
     Nodes::Node* node = nodes.getNodeByID(nodeID);
 
     synapse->setInput(node);
 
-    saveActionToFile(">ns," + to_string(nodeID) + "," + to_string(synID) + ",");
+    if (!loading) saveActionToFile(">ns " + to_string(nodeID) + " " + to_string(synID) + " ");
 
     return true;
 }
@@ -205,56 +205,157 @@ void Controller::loadFromFile() {
 
     if (loadFile.is_open()) {
         string line;
-        string ::iterator it;
 
-        char c, instr;
-        string params;
-        int paramNum;
+        int id, cycleFlag;
+        Nodes::Node* n;
+        Synapses::Synapse* syn;
+
 
         while (getline(loadFile, line)) {
             stringstream  ss(line);
             string infobit; //thanks logan for the name
 
+            cout << "otter loop\n";
 
-            for (it = line.begin(); it != line.end(); it++) {
-                c = *it;
+            while (!ss.eof()) {
+                ss >> infobit;
+                cout << infobit << endl;
+                cout << "aaaaaa\n";
+                if (infobit == "+n0") {
+                    // basic node
+                    ss >> id;
+                    ss >> cycleFlag;
 
-                switch (c) {
-                    case '+':
+                    n = new Nodes::NotInputNode(id);
 
-                        break;
-                    case '>':
+                    n->addFlag(static_cast<Flags::NodeFlag>(cycleFlag));
 
-                        break;
-                    case ',':
+                    nodes.addNode(n);
+                    nodes.checkID(id);
+                } else if (infobit == "+n1") {
+                    // input
+                    ss >> id;
+                    ss >> cycleFlag;
 
-                        break;
-                    default:
+                    float val;
+                    ss >> val;
 
+                    n = new Nodes::Input(id);
+
+                    n->setValue(val);
+
+                    nodes.addNode(n);
+                    nodes.checkID(id);
+                } else if (infobit == "+n2") {
+                    // Random input
+                    int mode;
+                    float min, max;
+
+                    ss >> id;
+                    ss >> cycleFlag;
+                    ss >> mode;
+                    ss >> min;
+                    ss >> max;
+
+                    n = new Nodes::RandomInput(id, mode, min, max);
+
+                    nodes.addNode(n);
+                    nodes.checkID(id);
+                } else if (infobit == "+n3") {
+                    // Output
+                    ss >> id;
+                    ss >> cycleFlag;
+
+                    n = new Nodes::Output(id);
+
+                    n->addFlag(static_cast<Flags::NodeFlag>(cycleFlag));
+
+                    nodes.addNode(n);
+                    outputs.addNode(n);
+                    nodes.checkID(id);
+                } else if (infobit == "+s0") {
+                    //passthrough syn
+                    ss >> id;
+
+                    syn = new Synapses::PassthroughSynapse(id);
+
+                    synapses.addSynapse(syn);
+                    synapses.checkID(id);
+                } else if (infobit == "+s1") {
+                    //weighted syn
+                    float weight;
+                    ss >> id;
+                    ss >> weight;
+
+                    syn = new Synapses::WeightedSynapse(id, weight);
+
+                    synapses.addSynapse(syn);
+                    synapses.checkID(id);
+                } else if (infobit == ">sn") {
+                    int id1, id2;
+                    ss >> id1;
+                    ss >> id2;
+
+                    addSynapseToNode(id1, id2, true);
+                } else if (infobit == ">ns") {
+                    int id1, id2;
+                    ss >> id1;
+                    ss >> id2;
+
+                    addNodeToSynapse(id1, id2, true);
+                } else if (infobit == ">nn") {
+                    // convenience instr, takes n1 s n2 and makes necessary connections
+                    int n1, s, n2;
+                    ss >> n1;
+                    ss >> s;
+                    ss >> n2;
+
+                    addNodeToSynapse(n1, s, true);
+                    addSynapseToNode(s, n2, true);
+                } else if (infobit == ">ss") {
+                    // convenience instr, connects 2 syns with dummy node (unreferenceable)
+                    int s1, s2;
+                    ss >> s1;
+                    ss >> s2;
+
+                    n = new Nodes::NotInputNode(0);
+
+                    Synapses::Synapse* syn1 = synapses.getSynapseByID(s1);
+                    Synapses::Synapse* syn2 = synapses.getSynapseByID(s2);
+
+                    n->addSynapse(syn1);
+                    syn2->setInput(n);
+                } else if (infobit == "eff") {
+                    return;
                 }
             }
         }
     }
 
     loadFile.close();
+
+    //std::ofstream resetFile("..\\controller.lsv");
+    //resetFile.close();
 }
 
 void Controller::initController() {
-    ParamPackages::NodeParams outP1;
-    newOutput(0, outP1);
+//    ParamPackages::NodeParams outP1;
+//    newOutput(0, outP1);
+//
+//    ParamPackages::SynapseParams synP1;
+//    synP1.weightedSynapseParams.weight = 0.5;
+//    newSynapse(1, synP1);
+//
+//    ParamPackages::NodeParams rinP1;
+//    rinP1.randInputParams.mode = 4;
+//    rinP1.randInputParams.min = 5;
+//    rinP1.randInputParams.max = 10;
+//    newNode(2, rinP1);
+//
+//    addNodeToSynapse(1, 0);
+//    addSynapseToNode(0, 0);
 
-    ParamPackages::SynapseParams synP1;
-    synP1.weightedSynapseParams.weight = 0.5;
-    newSynapse(1, synP1);
-
-    ParamPackages::NodeParams rinP1;
-    rinP1.randInputParams.mode = 4;
-    rinP1.randInputParams.min = 5;
-    rinP1.randInputParams.max = 10;
-    newNode(2, rinP1);
-
-    addNodeToSynapse(1, 0);
-    addSynapseToNode(0, 0);
+    loadFromFile();
 }
 
 

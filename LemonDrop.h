@@ -23,8 +23,8 @@ namespace LemonDrop {
         bool newSynapse(unsigned int type, ParamPackages::SynapseParams params);
 
 
-        bool addSynapseToNode(unsigned int synID, unsigned int nodeID);
-        bool addNodeToSynapse(unsigned int nodeID, unsigned int synID);
+        bool addSynapseToNode(unsigned int synID, unsigned int nodeID, bool loading);
+        bool addNodeToSynapse(unsigned int nodeID, unsigned int synID, bool loading);
 
 
         void getAllOutputs();
@@ -32,7 +32,7 @@ namespace LemonDrop {
         [[noreturn]] void mainLoop();
 
         static void saveActionToFile(const std::string& s);
-        static void loadFromFile();
+        void loadFromFile();
 
         void initController();
 

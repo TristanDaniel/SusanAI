@@ -188,24 +188,24 @@ void Output::getOutput() {
 string Node::getFlagListString() {
     string s;
 
-    s += to_string((int)cycleFlag) + ",";
+    s += to_string((int)cycleFlag) + " ";
 
     return s;
 }
 
 string NotInputNode::saveNode() {
-    return "+n,0," + to_string(getID()) + "," + getFlagListString();
+    return "+n0 " + to_string(getID()) + " " + getFlagListString();
 }
 
 string Input::saveNode() {
-    return "+n,1," + to_string(getID()) + "," + getFlagListString() + to_string(getValue()) + ",";
+    return "+n1 " + to_string(getID()) + " " + getFlagListString() + to_string(getValue()) + " ";
 }
 
 string RandomInput::saveNode() {
-    return "+n,2," + to_string(getID()) + "," + getFlagListString()
-    + to_string(mode) + "," + to_string(minimum) + "," + to_string(maximum) + ",";
+    return "+n2 " + to_string(getID()) + " " + getFlagListString()
+    + to_string(mode) + " " + to_string(minimum) + " " + to_string(maximum) + " ";
 }
 
 string Output::saveNode() {
-    return "+n,3," + to_string(getID()) + "," + getFlagListString();
+    return "+n3 " + to_string(getID()) + " " + getFlagListString();
 }

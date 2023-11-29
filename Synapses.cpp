@@ -29,9 +29,9 @@ void Synapse::setInput(Nodes::Node* n) { input = n; }
 bool Synapse::operator==(const Synapse& s) const { return id == s.id; }
 
 string PassthroughSynapse::saveSynapse() {
-    return "+s,0," + to_string(getID()) + ",";
+    return "+s0 " + to_string(getID()) + " ";
 }
 
 string WeightedSynapse::saveSynapse() {
-    return "+s,1," + to_string(getID()) + "," + to_string(weight) + ",";
+    return "+s1 " + to_string(getID()) + " " + to_string(weight) + " ";
 }
