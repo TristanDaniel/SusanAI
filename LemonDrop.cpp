@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include "LemonDrop.h"
 #include "Utils.h"
@@ -15,6 +16,12 @@ Controller::Controller() {
     nodes.InitHandler();
     outputs.InitHandler();
     synapses.InitHandler();
+
+    std::ofstream saveFile("..\\controller.lsv");
+    saveFile.close();
+
+    initController();
+    mainLoop();
 }
 
 bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
@@ -155,7 +162,7 @@ bool Controller::addSynapseToNode(unsigned int synID, unsigned int nodeID) {
 
     node->addSynapse(synapse);
 
-    saveActionToFile(">sn,");
+    saveActionToFile(">sn," + to_string(synID) + "," + to_string(nodeID) + ",");
 
     return true;
 }
@@ -166,7 +173,7 @@ bool Controller::addNodeToSynapse(unsigned int nodeID, unsigned int synID) {
 
     synapse->setInput(node);
 
-
+    saveActionToFile(">ns," + to_string(nodeID) + "," + to_string(synID) + ",");
 
     return true;
 }
@@ -179,15 +186,13 @@ void Controller::getAllOutputs() {
 
 [[noreturn]] void Controller::mainLoop() {
     while (true) {
-        std::cout << std::to_string((int)Flags::NodeFlag::PARTIAL_ON_CYCLE);
-
         getAllOutputs();
         sleep(1);
     }
 }
 
 void Controller::saveActionToFile(const std::string& s) {
-    std::ofstream saveFile("controller.lds", std::ios::app);
+    std::ofstream saveFile("..\\controller.lsv", std::ios::app);
 
     if (saveFile.is_open()) {
         saveFile << s;
@@ -196,12 +201,61 @@ void Controller::saveActionToFile(const std::string& s) {
 }
 
 void Controller::loadFromFile() {
-    std::ifstream loadFile ("controller.lds");
+    std::ifstream loadFile ("..\\controller.lsv");
+
+    if (loadFile.is_open()) {
+        string line;
+        string ::iterator it;
+
+        char c, instr;
+        string params;
+        int paramNum;
+
+        while (getline(loadFile, line)) {
+            stringstream  ss(line);
+            string infobit; //thanks logan for the name
 
 
+            for (it = line.begin(); it != line.end(); it++) {
+                c = *it;
+
+                switch (c) {
+                    case '+':
+
+                        break;
+                    case '>':
+
+                        break;
+                    case ',':
+
+                        break;
+                    default:
+
+                }
+            }
+        }
+    }
+
+    loadFile.close();
 }
 
+void Controller::initController() {
+    ParamPackages::NodeParams outP1;
+    newOutput(0, outP1);
 
+    ParamPackages::SynapseParams synP1;
+    synP1.weightedSynapseParams.weight = 0.5;
+    newSynapse(1, synP1);
+
+    ParamPackages::NodeParams rinP1;
+    rinP1.randInputParams.mode = 4;
+    rinP1.randInputParams.min = 5;
+    rinP1.randInputParams.max = 10;
+    newNode(2, rinP1);
+
+    addNodeToSynapse(1, 0);
+    addSynapseToNode(0, 0);
+}
 
 
 

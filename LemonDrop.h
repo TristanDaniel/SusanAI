@@ -34,6 +34,8 @@ namespace LemonDrop {
         static void saveActionToFile(const std::string& s);
         static void loadFromFile();
 
+        void initController();
+
 
     public:
         Controller();

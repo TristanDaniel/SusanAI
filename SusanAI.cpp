@@ -12,23 +12,23 @@ int main()
 {
     Controller ld = Controller();
 
-	ParamPackages::NodeParams outP1;
-    ld.newOutput(0, outP1);
-
-    ParamPackages::SynapseParams synP1;
-    synP1.weightedSynapseParams.weight = 0.5;
-    ld.newSynapse(1, synP1);
-
-    ParamPackages::NodeParams rinP1;
-    rinP1.randInputParams.mode = 4;
-    rinP1.randInputParams.min = 5;
-    rinP1.randInputParams.max = 10;
-    ld.newNode(1, rinP1);
-
-    ld.addNodeToSynapse(1, 0);
-    ld.addSynapseToNode(0, 0);
-
-    ld.mainLoop();
+//	ParamPackages::NodeParams outP1;
+//    ld.newOutput(0, outP1);
+//
+//    ParamPackages::SynapseParams synP1;
+//    synP1.weightedSynapseParams.weight = 0.5;
+//    ld.newSynapse(1, synP1);
+//
+//    ParamPackages::NodeParams rinP1;
+//    rinP1.randInputParams.mode = 4;
+//    rinP1.randInputParams.min = 5;
+//    rinP1.randInputParams.max = 10;
+//    ld.newNode(1, rinP1);
+//
+//    ld.addNodeToSynapse(1, 0);
+//    ld.addSynapseToNode(0, 0);
+//
+//    ld.mainLoop();
 
 
     //Output o = Output();
