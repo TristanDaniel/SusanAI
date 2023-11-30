@@ -215,12 +215,8 @@ void Controller::loadFromFile() {
             stringstream  ss(line);
             string infobit; //thanks logan for the name
 
-            cout << "otter loop\n";
-
             while (!ss.eof()) {
                 ss >> infobit;
-                cout << infobit << endl;
-                cout << "aaaaaa\n";
                 if (infobit == "+n0") {
                     // basic node
                     ss >> id;

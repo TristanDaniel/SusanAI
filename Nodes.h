@@ -126,3 +126,7 @@ namespace Nodes {
         std::string saveNode() override;
 	};
 }
+
+class FireableNode : public Nodes::NotInputNode {
+
+};
