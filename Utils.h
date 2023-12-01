@@ -8,6 +8,17 @@ namespace Flags {
         PARTIAL_ON_CYCLE
     };
 
+    enum class ActionFlag {
+        DO_NOTHING,
+        ADD_NODE,
+        ADD_SYNAPSE,
+        NODE_TO_SYN,
+        SYN_TO_NODE,
+        NODE_TO_NODE,
+        SYN_TO_SYN,
+        SET_FLAG_FOR_NODE
+    };
+
 }
 
 namespace ParamPackages {

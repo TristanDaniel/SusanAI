@@ -125,8 +125,48 @@ namespace Nodes {
 
         std::string saveNode() override;
 	};
+
+    class Fireable {
+
+    protected:
+        float fireThreshold { 0.5 };
+
+
+        virtual bool checkFire() = 0;
+
+    public:
+        explicit Fireable(float t);
+
+        void setThreshold(float t);
+    };
+
+    class FireableNode : public Nodes::NotInputNode, public Nodes::Fireable {
+
+    protected:
+        bool checkFire() override;
+
+    public:
+        float getValue() override;
+
+        std::string  saveNode() override;
+
+    };
+
+    class ActionNode : public Nodes::Output, public Nodes::Fireable {
+
+    protected:
+        Flags::ActionFlag actionType = Flags::ActionFlag::DO_NOTHING;
+
+        bool checkFire() override;
+
+    public:
+
+        ActionNode(unsigned int i, float t);
+
+        void setActionType(const Flags::ActionFlag& f);
+
+        Flags::ActionFlag getActionType();
+
+    };
 }
 
-class FireableNode : public Nodes::NotInputNode {
-
-};

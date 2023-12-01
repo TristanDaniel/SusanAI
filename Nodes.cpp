@@ -17,6 +17,9 @@ using Nodes::Input;
 using Nodes::RandomInput;
 using Nodes::Output;
 using Flags::NodeFlag;
+using Nodes::Fireable;
+using Nodes::FireableNode;
+using Nodes::ActionNode;
 
 
 Node::Node(unsigned int i) : Structures::Part(i) {}
@@ -209,3 +212,40 @@ string RandomInput::saveNode() {
 string Output::saveNode() {
     return "+n3 " + to_string(getID()) + " " + getFlagListString();
 }
+
+Fireable::Fireable(float t) : fireThreshold(t) {}
+
+bool FireableNode::checkFire() { return value >= fireThreshold; }
+
+float FireableNode::getValue() {
+    NotInputNode::getValue();
+
+    if (!checkFire()) {
+        value = 0;
+        lastValue = 0;
+    }
+
+    return value;
+}
+
+void Fireable::setThreshold(float t) { fireThreshold = t; }
+
+string  FireableNode::saveNode() {
+    return "+n4 " + to_string(getID()) + " " + getFlagListString() + to_string(fireThreshold) + " ";
+}
+
+bool ActionNode::checkFire() { return value >= fireThreshold; }
+
+ActionNode::ActionNode(unsigned int i, float t) : Output(i), Fireable(t) {}
+
+void ActionNode::setActionType(const Flags::ActionFlag &f) { actionType = f; }
+
+
+
+
+
+
+
+
+
+
