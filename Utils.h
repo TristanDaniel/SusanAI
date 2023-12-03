@@ -23,7 +23,7 @@ namespace Flags {
 
 namespace ParamPackages {
 
-    union NodeParams {
+    struct NodeParams {
         struct BasicNodeParams {
             // used for all basic node types (NotInputNode, Input, Output)
             float value = 0;
@@ -43,7 +43,7 @@ namespace ParamPackages {
         }
     };
 
-    union SynapseParams {
+    struct SynapseParams {
         struct PassthroughSynapseParams {
 
         } passthroughSynapseParams;
@@ -56,4 +56,8 @@ namespace ParamPackages {
 
         }
     };
+}
+
+namespace DataBits {
+    static const int NUM_NODE_TYPES = 12;
 }

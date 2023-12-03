@@ -36,6 +36,14 @@ namespace LemonDrop {
 
         void initController();
 
+        void actionNodeAddNodeFunction(Nodes::ActionNode* actionNode);
+        void actionNodeAddSynapseFunction(Nodes::ActionNode* actionNode);
+        void actionNodeNodeToSynFunction(Nodes::ActionNode* actionNode);
+        void actionNodeSynToNodeFunction(Nodes::ActionNode* actionNode);
+        void actionNodeNodeToNodeFunction(Nodes::ActionNode* actionNode);
+        void actionNodeSynToSynFunction(Nodes::ActionNode* actionNode);
+        void actionNodeSetFlagForNodeFunction(Nodes::ActionNode* actionNode);
+
 
     public:
         Controller();

@@ -11,15 +11,16 @@
 
 
 using namespace std;
-using Nodes::Node;
-using Nodes::NotInputNode;
-using Nodes::Input;
-using Nodes::RandomInput;
-using Nodes::Output;
+using namespace Nodes;
+//using Nodes::Node;
+//using Nodes::NotInputNode;
+//using Nodes::Input;
+//using Nodes::RandomInput;
+//using Nodes::Output;
 using Flags::NodeFlag;
-using Nodes::Fireable;
-using Nodes::FireableNode;
-using Nodes::ActionNode;
+//using Nodes::Fireable;
+//using Nodes::FireableNode;
+//using Nodes::ActionNode;
 
 
 Node::Node(unsigned int i) : Structures::Part(i) {}
@@ -236,16 +237,54 @@ string  FireableNode::saveNode() {
 
 bool ActionNode::checkFire() { return value >= fireThreshold; }
 
-ActionNode::ActionNode(unsigned int i, float t) : Output(i), Fireable(t) {}
+ActionNode::ActionNode(unsigned int i, float t, int type) : Output(i), Fireable(t), actionType((Flags::ActionFlag)type) {}
 
 void ActionNode::setActionType(const Flags::ActionFlag &f) { actionType = f; }
 
+Flags::ActionFlag ActionNode::getActionType() { return actionType; }
 
+float ActionNode::getValue() {
+    NotInputNode::getValue();
 
+    if (!checkFire()) {
+        value = 0;
+        lastValue = 0;
+    }
 
+    return value;
+}
 
+string ActionNode::saveNode() {
+    return "+n5 " + to_string(getID()) + " " + getFlagListString()
+            + to_string(fireThreshold) + " " + to_string((int)actionType);
+}
 
+void AddNodeNode::getOutput() {
+    if (value == 0) return;
 
+    nodeType = nodeTypeInput ? (int)(nodeTypeInput->getData() * DataBits::NUM_NODE_TYPES) % DataBits::NUM_NODE_TYPES : 0;
+    nodeCycleFlag = cycleFlagInput ? (NodeFlag)((int)(cycleFlagInput->getData() * 3) % 3) : NodeFlag::PARTIAL_ON_CYCLE;
+    nodeValue = valueInput ? valueInput->getData() : 0;
+    mode = modeInput ? (int)(modeInput->getData() * 5) % 5 : 0;
+    min = minInput ? minInput->getData() : 0;
+    max = maxInput ? maxInput->getData() : 0;
+}
 
+string AddNodeNode::saveNode() {
+    return "+n6 " + to_string(getID()) + " " + getFlagListString()
+            + to_string(fireThreshold) + " " + to_string((int)actionType);
+}
 
+int AddNodeNode::getNodeType() { return nodeType; }
 
+ParamPackages::NodeParams AddNodeNode::getParams() {
+    ParamPackages::NodeParams params;
+
+    params.basicNodeParams.value = nodeValue;
+    params.basicNodeParams.cycleFlag = nodeCycleFlag;
+    params.randInputParams.mode = mode;
+    params.randInputParams.min = min;
+    params.randInputParams.max = max;
+
+    return params;
+}

@@ -11,6 +11,8 @@
 
 namespace Synapses {
 	class Synapse;
+    class PassthroughSynapse;
+    class WeightedSynapse;
 }
 
 
@@ -161,12 +163,47 @@ namespace Nodes {
 
     public:
 
-        ActionNode(unsigned int i, float t);
+        ActionNode(unsigned int i, float t, int type);
 
         void setActionType(const Flags::ActionFlag& f);
 
         Flags::ActionFlag getActionType();
 
+        float getValue() override;
+
+        std::string  saveNode() override;
+
     };
+
+    class AddNodeNode : public ActionNode {
+
+    protected:
+        int nodeType = 0, mode = 0;
+        Flags::NodeFlag nodeCycleFlag = Flags::NodeFlag::PARTIAL_ON_CYCLE;
+        float nodeValue = 0, min = 0, max = 0;
+
+        Synapses::Synapse* nodeTypeInput = nullptr,
+                         * cycleFlagInput = nullptr,
+                         * valueInput = nullptr,
+                         * modeInput = nullptr,
+                         * minInput = nullptr,
+                         * maxInput = nullptr;
+
+    public:
+
+        AddNodeNode(unsigned int i, float t) : ActionNode(i, t, 1) {}
+
+        void getOutput() override;
+
+        std::string  saveNode() override;
+
+        int getNodeType();
+        ParamPackages::NodeParams getParams();
+
+    };
+
+
+
+
 }
 

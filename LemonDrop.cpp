@@ -43,6 +43,8 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             saveActionToFile(n->saveNode());
 
+            cout << n->saveNode() << endl;
+
             return true;
         }
 
@@ -58,6 +60,8 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
             nodes.addNode(n);
 
             saveActionToFile(n->saveNode());
+
+            cout << n->saveNode() << endl;
 
             return true;
         }
@@ -78,6 +82,8 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
             nodes.addNode(n);
 
             saveActionToFile(n->saveNode());
+
+            cout << n->saveNode() << endl;
 
             return true;
         }
@@ -106,6 +112,8 @@ bool Controller::newOutput(unsigned int type, ParamPackages::NodeParams params) 
 
             saveActionToFile(n->saveNode());
 
+            cout << n->saveNode() << endl;
+
             return true;
         }
 
@@ -130,6 +138,8 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
 
             saveActionToFile(s->saveSynapse());
 
+            cout << s->saveSynapse() << endl;
+
             return true;
         }
 
@@ -145,6 +155,8 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
             synapses.addSynapse(s);
 
             saveActionToFile(s->saveSynapse());
+
+            cout << s->saveSynapse() << endl;
 
             return true;
         }
@@ -179,8 +191,36 @@ bool Controller::addNodeToSynapse(unsigned int nodeID, unsigned int synID, bool 
 }
 
 void Controller::getAllOutputs() {
-    for (auto* output : outputs.getNodes()) {
-        ((Nodes::Output*)output)->getOutput();
+    for (Nodes::Node* output : outputs.getNodes()) {
+        if (auto* actionNode = dynamic_cast<Nodes::ActionNode *>(output)) {
+            if (!actionNode->getValue()) {
+                switch (actionNode->getActionType()) {
+                    case Flags::ActionFlag::DO_NOTHING:
+                        break;
+                    case Flags::ActionFlag::ADD_NODE:
+                        actionNodeAddNodeFunction(actionNode);
+                        break;
+                    case Flags::ActionFlag::ADD_SYNAPSE:
+                        actionNodeAddSynapseFunction(actionNode);
+                        break;
+                    case Flags::ActionFlag::NODE_TO_SYN:
+                        actionNodeNodeToSynFunction(actionNode);
+                        break;
+                    case Flags::ActionFlag::SYN_TO_NODE:
+                        actionNodeSynToNodeFunction(actionNode);
+                        break;
+                    case Flags::ActionFlag::NODE_TO_NODE:
+                        actionNodeNodeToNodeFunction(actionNode);
+                        break;
+                    case Flags::ActionFlag::SYN_TO_SYN:
+                        actionNodeSynToSynFunction(actionNode);
+                        break;
+                    case Flags::ActionFlag::SET_FLAG_FOR_NODE:
+                        actionNodeSetFlagForNodeFunction(actionNode);
+                        break;
+                }
+            }
+        } else ((Nodes::Output *) output)->getOutput(); //warning is fine, ignore
     }
 }
 
@@ -269,6 +309,13 @@ void Controller::loadFromFile() {
                     nodes.addNode(n);
                     outputs.addNode(n);
                     nodes.checkID(id);
+                } else if (infobit == "+n4") {
+                    // fireable
+                } else if (infobit == "+n5") {
+                    // action
+                    // action type tells which action node to make
+                    // dont need separate nodetype checks,
+                    // just use switch to know which one to make
                 } else if (infobit == "+s0") {
                     //passthrough syn
                     ss >> id;
@@ -354,7 +401,14 @@ void Controller::initController() {
     loadFromFile();
 }
 
+void Controller::actionNodeAddNodeFunction(Nodes::ActionNode *actionNode) {
+    auto* node = dynamic_cast<Nodes::AddNodeNode*>(actionNode);
 
+    int nodeType = node->getNodeType();
+    ParamPackages::NodeParams params;
+
+    newNode(nodeType, params);
+}
 
 
 
