@@ -6,6 +6,7 @@
 #include <sstream>
 #include <chrono>
 #include <thread>
+#include <random>
 
 #include "LemonDrop.h"
 #include "Utils.h"
@@ -22,7 +23,10 @@ Controller::Controller() {
 //    std::ofstream saveFile("..\\controller.lsv");
 //    saveFile.close();
 
-    initController();
+    //initController();
+
+    generateInitialController();
+
     mainLoop();
 }
 
@@ -303,6 +307,7 @@ void Controller::getAllOutputs() {
 
 [[noreturn]] void Controller::mainLoop() {
     while (true) {
+        cout << "loop" << endl;
         getAllOutputs();
         this_thread::sleep_for(chrono::milliseconds(loopwait));
 
@@ -626,7 +631,9 @@ void Controller::actionNodeSetFlagForNodeFunction(Nodes::ActionNode *actionNode)
 
 void Controller::generateInitialController() {
     //// setup ////
-
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::uniform_real_distribution<float> dist(-1, 1);
 
 
     //// base inputs ////
@@ -651,6 +658,7 @@ void Controller::generateInitialController() {
     nodes.addNode(fixedN3); // 5
 
     //// 2 layers of 6 ////
+    // 1st 6 layer
     for (int i = 0; i < 6; i++) {
         Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
         nodes.addNode(n); // 6-11
@@ -658,6 +666,214 @@ void Controller::generateInitialController() {
 
     // connect base inputs to first layer of 6
     for (int i = 6; i < 12; i++) {
+        for (int j = 0; j < 6; j++) {
+            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+            synapses.addSynapse(syn);
 
+            addNodeToSynapse(j, syn->getID(), false);
+            addSynapseToNode(syn->getID(), i, false);
+        }
+    }
+
+    // 2nd 6 layer
+    for (int i = 0; i < 6; i++) {
+        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+        nodes.addNode(n); // 12-17
+    }
+
+    // 1st 6 layer to 2nd 6 layer
+    for (int i = 12; i < 17; i++) {
+        for (int j = 6; j < 12; j++) {
+            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+            synapses.addSynapse(syn);
+
+            addNodeToSynapse(j, syn->getID(), false);
+            addSynapseToNode(syn->getID(), i, false);
+        }
+    }
+
+    //// 2 layers of 16 ////
+    // 1st 16 layer
+    for (int i = 0; i < 16; i++) {
+        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+        nodes.addNode(n); // 18-33
+    }
+
+    // 2nd 6 layer to 1st 16 layer
+    for (int i = 18; i < 34; i++) {
+        for (int j = 12; j < 18; j++) {
+            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+            synapses.addSynapse(syn);
+
+            addNodeToSynapse(j, syn->getID(), false);
+            addSynapseToNode(syn->getID(), i, false);
+        }
+    }
+
+    // 2nd 16 layer
+    for (int i = 0; i < 16; i++) {
+        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+        nodes.addNode(n); // 34-49
+    }
+
+    // 1st 16 layer to 2nd 16 layer
+    for (int i = 34; i < 50; i++) {
+        for (int j = 18; j < 34; j++) {
+            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+            synapses.addSynapse(syn);
+
+            addNodeToSynapse(j, syn->getID(), false);
+            addSynapseToNode(syn->getID(), i, false);
+        }
+    }
+
+    //// 10 and 8 ////
+    // 10
+    for (int i = 0; i < 10; i++) {
+        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+        nodes.addNode(n); // 50-59
+    }
+
+    // 8
+    for (int i = 0; i < 8; i++) {
+        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+        nodes.addNode(n); // 60-67
+    }
+
+    // 2nd 16 to 10
+    for (int i = 50; i < 60; i++) {
+        for (int j = 34; j < 50; j++) {
+            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+            synapses.addSynapse(syn);
+
+            addNodeToSynapse(j, syn->getID(), false);
+            addSynapseToNode(syn->getID(), i, false);
+        }
+    }
+
+    // 2nd 16 to 8
+    for (int i = 60; i < 68; i++) {
+        for (int j = 34; j < 50; j++) {
+            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+            synapses.addSynapse(syn);
+
+            addNodeToSynapse(j, syn->getID(), false);
+            addSynapseToNode(syn->getID(), i, false);
+        }
+    }
+
+    //// param inputs and output value inputs ////
+    // 14 param inputs
+    for (int i = 0; i < 14; i++) {
+        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+        nodes.addNode(n); // 68-81
+    }
+
+    // 4 output value inputs
+    for (int i = 0; i < 4; i++) {
+        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+        nodes.addNode(n); // 82-85
+    }
+
+    // 10 to params
+    for (int i = 68; i < 82; i++) {
+        for (int j = 50; j < 60; j++) {
+            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+            synapses.addSynapse(syn);
+
+            addNodeToSynapse(j, syn->getID(), false);
+            addSynapseToNode(syn->getID(), i, false);
+        }
+    }
+
+    // 8 to value
+    for (int i = 82; i < 86; i++) {
+        for (int j = 60; j < 68; j++) {
+            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+            synapses.addSynapse(syn);
+
+            addNodeToSynapse(j, syn->getID(), false);
+            addSynapseToNode(syn->getID(), i, false);
+        }
+    }
+
+    //// outputs ////
+    // 5 outputs, 86-90
+    Nodes::Node* doNothingOutput = new Nodes::ActionNode(nodes.getNextID(), 0.5, 0);
+    nodes.addNode(doNothingOutput);
+    outputs.addNode(doNothingOutput);
+    Nodes::Node* addNodeOutput = new Nodes::AddNodeNode(nodes.getNextID(), 0.5);
+    nodes.addNode(addNodeOutput);
+    outputs.addNode(addNodeOutput);
+    Nodes::Node* addSynOutput = new Nodes::AddSynapseNode(nodes.getNextID(), 0.5);
+    nodes.addNode(addSynOutput);
+    outputs.addNode(addSynOutput);
+    Nodes::Node* makeConOutput = new Nodes::MakeConnectionNode(nodes.getNextID(), 0.5);
+    nodes.addNode(makeConOutput);
+    outputs.addNode(makeConOutput);
+    Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), 0.5);
+    nodes.addNode(setFlagOutput);
+    outputs.addNode(setFlagOutput);
+
+    // params to outputs
+
+    // no action - 86 - no inputs
+
+    // add node - 87 - 6 inputs
+    for (int i = 0; i < 6; i++) {
+        Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+        synapses.addSynapse(syn);
+
+        addNodeToSynapse(68+i, syn->getID(), false);
+        addSynapseToNode(syn->getID(), 87, false);
+    }
+
+    // add syn - 88 - 2 inputs
+    for (int i = 0; i < 2; i++) {
+        Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+        synapses.addSynapse(syn);
+
+        addNodeToSynapse(74+i, syn->getID(), false);
+        addSynapseToNode(syn->getID(), 88, false);
+    }
+
+    // make con - 89 - 4 inputs
+    for (int i = 0; i < 4; i++) {
+        Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+        synapses.addSynapse(syn);
+
+        addNodeToSynapse(76+i, syn->getID(), false);
+        addSynapseToNode(syn->getID(), 89, false);
+    }
+
+    // set flag - 90 - 2 inputs
+    for (int i = 0; i < 2; i++) {
+        Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+        synapses.addSynapse(syn);
+
+        addNodeToSynapse(78+i, syn->getID(), false);
+        addSynapseToNode(syn->getID(), 90, false);
+    }
+
+    // 4 val to outputs
+    for (int i = 86; i < 91; i++) {
+        for (int j = 82; j < 86; j++) {
+            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+            synapses.addSynapse(syn);
+
+            addNodeToSynapse(j, syn->getID(), false);
+            addSynapseToNode(syn->getID(), i, false);
+        }
+    }
+
+
+    //// extra outputs and syns to play with ////
+    for (int i = 0; i < 5; i++) {
+        Nodes::Node* n = new Nodes::Output(nodes.getNextID());
+        nodes.addNode(n);
+        outputs.addNode(n);
+
+        Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+        synapses.addSynapse(syn);
     }
 }
