@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <chrono>
+#include <thread>
 
 #include "LemonDrop.h"
 #include "Utils.h"
@@ -79,6 +81,90 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             n->addFlag(params.randInputParams.cycleFlag);
 
+            nodes.addNode(n);
+
+            saveActionToFile(n->saveNode());
+
+            cout << n->saveNode() << endl;
+
+            return true;
+        }
+
+        case 3:
+        {
+            //basic output
+            id = nodes.getNextID();
+
+            n = new Nodes::Output(id);
+
+            n->addFlag(params.basicNodeParams.cycleFlag);
+
+            outputs.addNode(n);
+            nodes.addNode(n);
+
+            saveActionToFile(n->saveNode());
+
+            cout << n->saveNode() << endl;
+
+            return true;
+        }
+
+        case 4:
+        {
+            //fireable node
+            id = nodes.getNextID();
+            float threshold = params.fireableNodeParams.threshold;
+
+            n = new Nodes::FireableNode(id, threshold);
+
+            n->addFlag(params.basicNodeParams.cycleFlag);
+
+            //outputs.addNode(n);
+            nodes.addNode(n);
+
+            saveActionToFile(n->saveNode());
+
+            cout << n->saveNode() << endl;
+
+            return true;
+
+        }
+
+        case 5:
+        {
+            //action node
+            id = nodes.getNextID();
+            float threshold = params.fireableNodeParams.threshold;
+            int actionType = params.actionNodeParams.actionType;
+
+            switch (actionType) {
+                case 0:
+                    // do nothing
+                    n = new Nodes::ActionNode(id, threshold, 0);
+                    break;
+                case 1:
+                    // add node
+                    n = new Nodes::AddNodeNode(id, threshold);
+                    break;
+                case 2:
+                    // add syn
+                    n = new Nodes::AddSynapseNode(id, threshold);
+                    break;
+                case 3:
+                    // make connection
+                    n = new Nodes::MakeConnectionNode(id, threshold);
+                    break;
+                case 4:
+                    // set flag
+                    n = new Nodes::SetFlagNode(id, threshold);
+                    break;
+                default:
+                    // invalid input punished with do nothing action
+                    n = new Nodes::ActionNode(id, threshold, 0);
+                    break;
+            }
+
+            outputs.addNode(n);
             nodes.addNode(n);
 
             saveActionToFile(n->saveNode());
@@ -193,7 +279,7 @@ bool Controller::addNodeToSynapse(unsigned int nodeID, unsigned int synID, bool 
 void Controller::getAllOutputs() {
     for (Nodes::Node* output : outputs.getNodes()) {
         if (auto* actionNode = dynamic_cast<Nodes::ActionNode *>(output)) {
-            if (!actionNode->getValue()) {
+            if (!actionNode->getValue()) {  //warning is fine, ignore
                 switch (actionNode->getActionType()) {
                     case Flags::ActionFlag::DO_NOTHING:
                         break;
@@ -203,31 +289,25 @@ void Controller::getAllOutputs() {
                     case Flags::ActionFlag::ADD_SYNAPSE:
                         actionNodeAddSynapseFunction(actionNode);
                         break;
-                    case Flags::ActionFlag::NODE_TO_SYN:
-                        actionNodeNodeToSynFunction(actionNode);
-                        break;
-                    case Flags::ActionFlag::SYN_TO_NODE:
-                        actionNodeSynToNodeFunction(actionNode);
-                        break;
-                    case Flags::ActionFlag::NODE_TO_NODE:
-                        actionNodeNodeToNodeFunction(actionNode);
-                        break;
-                    case Flags::ActionFlag::SYN_TO_SYN:
-                        actionNodeSynToSynFunction(actionNode);
+                    case Flags::ActionFlag::MAKE_CONNECTION:
+                        actionNodeMakeConnectionFunction(actionNode);
                         break;
                     case Flags::ActionFlag::SET_FLAG_FOR_NODE:
                         actionNodeSetFlagForNodeFunction(actionNode);
                         break;
                 }
             }
-        } else ((Nodes::Output *) output)->getOutput(); //warning is fine, ignore
+        } else ((Nodes::Output *) output)->getOutput();
     }
 }
 
 [[noreturn]] void Controller::mainLoop() {
     while (true) {
         getAllOutputs();
-        sleep(1);
+        this_thread::sleep_for(chrono::milliseconds(loopwait));
+
+        //sleep(1);
+
     }
 }
 
@@ -311,11 +391,67 @@ void Controller::loadFromFile() {
                     nodes.checkID(id);
                 } else if (infobit == "+n4") {
                     // fireable
+
+                    ss >> id;
+                    ss >> cycleFlag;
+
+                    float threshold;
+                    ss >> threshold;
+
+                    n = new Nodes::FireableNode(id, threshold);
+
+                    n->addFlag(static_cast<Flags::NodeFlag>(cycleFlag));
+
+                    nodes.addNode(n);
+                    nodes.checkID(id);
+
                 } else if (infobit == "+n5") {
                     // action
                     // action type tells which action node to make
                     // dont need separate nodetype checks,
                     // just use switch to know which one to make
+
+                    ss >> id;
+                    ss >> cycleFlag;
+
+                    float threshold;
+                    ss >> threshold;
+
+                    int actionType;
+                    ss >> actionType;
+
+                    switch (actionType) {
+                        case 0:
+                            // do nothing
+                            n = new Nodes::ActionNode(id, threshold, 0);
+                            break;
+                        case 1:
+                            // add node
+                            n = new Nodes::AddNodeNode(id, threshold);
+                            break;
+                        case 2:
+                            // add syn
+                            n = new Nodes::AddSynapseNode(id, threshold);
+                            break;
+                        case 3:
+                            // make connection
+                            n = new Nodes::MakeConnectionNode(id, threshold);
+                            break;
+                        case 4:
+                            // set flag
+                            n = new Nodes::SetFlagNode(id, threshold);
+                            break;
+                        default:
+                            // invalid input punished with do nothing action
+                            n = new Nodes::ActionNode(id, threshold, 0);
+                            break;
+                    }
+
+                    n->addFlag(static_cast<Flags::NodeFlag>(cycleFlag));
+
+                    nodes.addNode(n);
+                    nodes.checkID(id);
+
                 } else if (infobit == "+s0") {
                     //passthrough syn
                     ss >> id;
@@ -405,14 +541,123 @@ void Controller::actionNodeAddNodeFunction(Nodes::ActionNode *actionNode) {
     auto* node = dynamic_cast<Nodes::AddNodeNode*>(actionNode);
 
     int nodeType = node->getNodeType();
-    ParamPackages::NodeParams params;
+    ParamPackages::NodeParams params = node->getParams();
 
     newNode(nodeType, params);
 }
 
+void Controller::actionNodeAddSynapseFunction(Nodes::ActionNode *actionNode) {
+    auto* node = dynamic_cast<Nodes::AddSynapseNode*>(actionNode);
+
+    int synType = node->getSynType();
+    ParamPackages::SynapseParams params = node->getParams();
+
+    newSynapse(synType, params);
+}
+
+void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode) {
+    auto* node = dynamic_cast<Nodes::MakeConnectionNode*>(actionNode);
+
+    int conType = node->getConnectionType();
+    float id1 = node->getID1();
+    float id2 = node->getID2();
+    float id3 = node->getID3();
+
+    switch (conType) {
+        case 0:
+        {
+            unsigned int nodeID = (unsigned int)(id1 * nodes.getCurrID()) % nodes.getCurrID();
+            unsigned int synID = (unsigned int)(id2 * synapses.getCurrID()) % synapses.getCurrID();
+
+            addNodeToSynapse(nodeID, synID, false);
+            break;
+        }
+
+        case 1:
+        {
+            unsigned int nodeID = (unsigned int)(id2 * nodes.getCurrID()) % nodes.getCurrID();
+            unsigned int synID = (unsigned int)(id1 * synapses.getCurrID()) % synapses.getCurrID();
+
+            addSynapseToNode(synID, nodeID, false);
+            break;
+        }
+        case 2:
+        {
+            unsigned int nodeID = (unsigned int)(id1 * nodes.getCurrID()) % nodes.getCurrID();
+            unsigned int synID = (unsigned int)(id2 * synapses.getCurrID()) % synapses.getCurrID();
+            unsigned int node2ID = (unsigned int)(id3 * nodes.getCurrID()) % nodes.getCurrID();
+
+
+            addNodeToSynapse(nodeID, synID, false);
+            addSynapseToNode(synID, node2ID, false);
+            break;
+        }
+
+        case 3:
+        {
+            unsigned int synID = (unsigned int)(id1 * synapses.getCurrID()) % synapses.getCurrID();
+            unsigned int syn2ID = (unsigned int)(id2 * synapses.getCurrID()) % synapses.getCurrID();
+
+
+            auto* n = new Nodes::NotInputNode(0);
+
+            Synapses::Synapse* s1 = synapses.getSynapseByID(synID);
+            Synapses::Synapse* s2 = synapses.getSynapseByID(syn2ID);
+
+            n->addSynapse(s1);
+            s2->setInput(n);
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+void Controller::actionNodeSetFlagForNodeFunction(Nodes::ActionNode *actionNode) {
+    auto* node = dynamic_cast<Nodes::SetFlagNode*>(actionNode);
+
+    unsigned int targetID = (unsigned int)(node->getTargetID() * nodes.getCurrID()) % nodes.getCurrID();
+    auto flag = (Flags::NodeFlag)node->getFlagVal();
+
+    Nodes::Node* n = nodes.getNodeByID(targetID);
+    n->addFlag(flag);
+}
+
+
+void Controller::generateInitialController() {
+    //// setup ////
 
 
 
+    //// base inputs ////
+    const int numRand = 3;
+    const int numFixed = 3;
 
+    // rand
+    for (int i = 0; i < numRand; i++) {
+        Nodes::Node* n = new Nodes::RandomInput(nodes.getNextID(), 4, -10, 10);
+        nodes.addNode(n); //0, 1, 2
+    }
 
+    // fixed
+    Nodes::Node* fixedN1 = new Nodes::Input(nodes.getNextID());
+    fixedN1->setValue(0.5);
+    nodes.addNode(fixedN1); // 3
+    Nodes::Node* fixedN2 = new Nodes::Input(nodes.getNextID());
+    fixedN1->setValue(5);
+    nodes.addNode(fixedN2); // 4
+    Nodes::Node* fixedN3 = new Nodes::Input(nodes.getNextID());
+    fixedN1->setValue(-1);
+    nodes.addNode(fixedN3); // 5
 
+    //// 2 layers of 6 ////
+    for (int i = 0; i < 6; i++) {
+        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+        nodes.addNode(n); // 6-11
+    }
+
+    // connect base inputs to first layer of 6
+    for (int i = 6; i < 12; i++) {
+
+    }
+}

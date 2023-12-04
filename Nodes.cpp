@@ -270,12 +270,12 @@ void AddNodeNode::getOutput() {
     max = maxInput ? maxInput->getData() : 0;
 }
 
-string AddNodeNode::saveNode() {
-    return "+n6 " + to_string(getID()) + " " + getFlagListString()
-            + to_string(fireThreshold) + " " + to_string((int)actionType);
-}
+//string AddNodeNode::saveNode() {
+//    return "+n6 " + to_string(getID()) + " " + getFlagListString()
+//            + to_string(fireThreshold) + " " + to_string((int)actionType);
+//}
 
-int AddNodeNode::getNodeType() { return nodeType; }
+int AddNodeNode::getNodeType() const { return nodeType; }
 
 ParamPackages::NodeParams AddNodeNode::getParams() {
     ParamPackages::NodeParams params;
@@ -288,3 +288,130 @@ ParamPackages::NodeParams AddNodeNode::getParams() {
 
     return params;
 }
+
+void AddSynapseNode::getOutput() {
+    if (value == 0) return;
+
+    synType = synTypeInput ? (int)(synTypeInput->getData() * DataBits::NUM_SYN_TYPES) % DataBits::NUM_SYN_TYPES : 0;
+    weight = weightInput ? weightInput->getData() : 0;
+}
+
+int AddSynapseNode::getSynType() const { return synType; }
+
+ParamPackages::SynapseParams AddSynapseNode::getParams() {
+    ParamPackages::SynapseParams params;
+
+    params.weightedSynapseParams.weight = weight;
+
+    return params;
+}
+
+void AddNodeNode::addSynapse(Synapses::Synapse *syn) {
+    if (!nodeTypeInput) {
+        nodeTypeInput = syn;
+        return;
+    }
+    if (!cycleFlagInput) {
+        cycleFlagInput = syn;
+        return;
+    }
+    if (!valueInput) {
+        valueInput = syn;
+        return;
+    }
+    if (!modeInput) {
+        modeInput = syn;
+        return;
+    }
+    if (!minInput) {
+        minInput = syn;
+        return;
+    }
+    if (!maxInput) {
+        maxInput = syn;
+        return;
+    }
+
+    Node::addSynapse(syn);
+}
+
+void AddSynapseNode::addSynapse(Synapses::Synapse *syn) {
+    if (!synTypeInput) {
+        synTypeInput = syn;
+        return;
+    }
+    if (!weightInput) {
+        weightInput = syn;
+        return;
+    }
+
+    Node::addSynapse(syn);
+}
+
+void MakeConnectionNode::getOutput() {
+    if (value == 0) return;
+
+    connectionType = connectionTypeInput ?
+            (int)(connectionTypeInput->getData() * DataBits::NUM_CONN_TYPES) % DataBits::NUM_CONN_TYPES : 0;
+    id1 = id1Input ? id1Input->getData() : 0;
+    id2 = id2Input ? id2Input->getData() : 0;
+    id3 = (connectionType == 2 && id3Input) ? id3Input->getData() : 0;
+}
+
+void MakeConnectionNode::addSynapse(Synapses::Synapse *syn) {
+    if (!connectionTypeInput) {
+        connectionTypeInput = syn;
+        return;
+    }
+    if (!id1Input) {
+        id1Input = syn;
+        return;
+    }
+    if (!id2Input) {
+        id2Input = syn;
+        return;
+    }
+    if (!id3Input) {
+        id3Input = syn;
+        return;
+    }
+
+    Node::addSynapse(syn);
+}
+
+int MakeConnectionNode::getConnectionType() const { return connectionType; }
+float MakeConnectionNode::getID1() const { return id1; }
+float MakeConnectionNode::getID2() const { return id2; }
+float MakeConnectionNode::getID3() const { return id3; }
+
+void SetFlagNode::getOutput() {
+    targetID = targetIDInput ? targetIDInput->getData() : 0;
+    flagVal = flagValInput ? (int)(flagValInput->getData() * DataBits::NUM_NODE_FLAGS) % DataBits::NUM_NODE_FLAGS : 0;
+}
+
+void SetFlagNode::addSynapse(Synapses::Synapse *syn) {
+    if (!targetIDInput) {
+        targetIDInput = syn;
+        return;
+    }
+    if (!flagValInput) {
+        flagValInput = syn;
+        return;
+    }
+
+    Node::addSynapse(syn);
+}
+
+float SetFlagNode::getTargetID() const { return targetID; }
+int SetFlagNode::getFlagVal() const { return flagVal; }
+
+
+
+
+
+
+
+
+
+
+

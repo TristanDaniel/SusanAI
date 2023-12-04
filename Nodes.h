@@ -48,7 +48,7 @@ namespace Nodes {
 
         float getLastValue() const;
 
-		void addSynapse(Synapses::Synapse* syn);
+		virtual void addSynapse(Synapses::Synapse* syn);
 		void removeSynapse(Synapses::Synapse* syn);
 
         virtual std::string saveNode() = 0;
@@ -131,7 +131,7 @@ namespace Nodes {
     class Fireable {
 
     protected:
-        float fireThreshold { 0.5 };
+        float fireThreshold = 0.5;
 
 
         virtual bool checkFire() = 0;
@@ -148,6 +148,8 @@ namespace Nodes {
         bool checkFire() override;
 
     public:
+        FireableNode(unsigned int i, float t) : Nodes::NotInputNode(i), Nodes::Fireable(t) {}
+
         float getValue() override;
 
         std::string  saveNode() override;
@@ -195,14 +197,79 @@ namespace Nodes {
 
         void getOutput() override;
 
-        std::string  saveNode() override;
+        void addSynapse(Synapses::Synapse* syn) override;
 
-        int getNodeType();
+        //std::string  saveNode() override;
+
+        int getNodeType() const;
         ParamPackages::NodeParams getParams();
 
     };
 
+    class AddSynapseNode : public ActionNode {
 
+    protected:
+        int synType = 0;
+        float weight = 0;
+
+        Synapses::Synapse* synTypeInput = nullptr,
+                         * weightInput = nullptr;
+
+    public:
+        AddSynapseNode(unsigned int i, float t) : ActionNode(i, t, 2) {}
+
+        void getOutput() override;
+
+        void addSynapse(Synapses::Synapse* syn) override;
+
+        int getSynType() const;
+        ParamPackages::SynapseParams getParams();
+    };
+
+    class MakeConnectionNode : public ActionNode {
+
+    protected:
+        int connectionType = 0;
+        float id1 = 0, id2 = 0, id3 = 0; // id3 only used for nn con (type 2)
+
+        Synapses::Synapse* connectionTypeInput = nullptr,
+                         * id1Input = nullptr,
+                         * id2Input = nullptr,
+                         * id3Input = nullptr;
+
+    public:
+        MakeConnectionNode(unsigned int i, float t) : ActionNode(i, t, 3) {}
+
+        void getOutput() override;
+
+        void addSynapse(Synapses::Synapse* syn) override;
+
+        int getConnectionType() const;
+        float getID1() const;
+        float getID2() const;
+        float getID3() const;
+    };
+
+    class SetFlagNode : public ActionNode {
+
+    protected:
+        int targetType = 0; // useless for now, once synapses exist this will be useful
+        float targetID = 0;
+        int flagVal = 0;
+
+        Synapses::Synapse* targetIDInput = nullptr,
+                         * flagValInput = nullptr;
+
+    public:
+        SetFlagNode(unsigned int i, float t) : ActionNode(i, t, 4) {}
+
+        void getOutput() override;
+
+        void addSynapse(Synapses::Synapse* syn) override;
+
+        float getTargetID() const;
+        int getFlagVal() const;
+    };
 
 
 }

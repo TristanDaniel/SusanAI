@@ -25,6 +25,7 @@ namespace Handlers{
 
         Nodes::Node* getNodeByID(unsigned int id);
 
+        unsigned int getCurrID() const;
         unsigned int getNextID();
         void checkID(unsigned int id);
 
@@ -49,6 +50,7 @@ namespace Handlers{
 
         Synapses::Synapse* getSynapseByID(unsigned int id);
 
+        unsigned int getCurrID() const;
         unsigned int getNextID();
         void checkID(unsigned int id);
     };

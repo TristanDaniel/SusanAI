@@ -16,6 +16,8 @@ namespace LemonDrop {
 
         Handlers::SynapseHandler synapses;
 
+        int loopwait = 1000;
+
 
         bool newNode(unsigned int type, ParamPackages::NodeParams params);
         bool newOutput(unsigned int type, ParamPackages::NodeParams params);
@@ -38,11 +40,15 @@ namespace LemonDrop {
 
         void actionNodeAddNodeFunction(Nodes::ActionNode* actionNode);
         void actionNodeAddSynapseFunction(Nodes::ActionNode* actionNode);
-        void actionNodeNodeToSynFunction(Nodes::ActionNode* actionNode);
-        void actionNodeSynToNodeFunction(Nodes::ActionNode* actionNode);
-        void actionNodeNodeToNodeFunction(Nodes::ActionNode* actionNode);
-        void actionNodeSynToSynFunction(Nodes::ActionNode* actionNode);
+        void actionNodeMakeConnectionFunction(Nodes::ActionNode* actionNode);
         void actionNodeSetFlagForNodeFunction(Nodes::ActionNode* actionNode);
+
+//        void actionNodeNodeToSynFunction(Nodes::MakeConnectionNode* node);
+//        void actionNodeSynToNodeFunction(Nodes::MakeConnectionNode* node);
+//        void actionNodeNodeToNodeFunction(Nodes::MakeConnectionNode* node);
+//        void actionNodeSynToSynFunction(Nodes::MakeConnectionNode* node);
+
+        void generateInitialController();
 
 
     public:

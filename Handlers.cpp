@@ -25,6 +25,7 @@ Nodes::Node* NodeHandler::getNodeByID(unsigned int id) {
                          [&id](Nodes::Node* node) { return node->getID() == id;});
 }
 
+unsigned int NodeHandler::getCurrID() const { return nextID; }
 unsigned int NodeHandler::getNextID() { return nextID++; }
 
 std::vector<Nodes::Node*> NodeHandler::getNodes() {
@@ -51,6 +52,7 @@ Synapses::Synapse* SynapseHandler::getSynapseByID(unsigned int id) {
                          [&id](Synapses::Synapse* synapse) { return synapse->getID() == id;});
 }
 
+unsigned int SynapseHandler::getCurrID() const { return nextID; }
 unsigned int SynapseHandler::getNextID() { return nextID++; }
 
 void NodeHandler::checkID(unsigned int id) { if (id > nextID) nextID = id; }
