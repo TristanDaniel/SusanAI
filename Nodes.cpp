@@ -1,7 +1,6 @@
 
 #include <algorithm>
 #include <random>
-#include <ctime>
 #include <iostream>
 #include <unordered_map>
 
@@ -23,7 +22,7 @@ using Flags::NodeFlag;
 //using Nodes::ActionNode;
 
 
-Node::Node(unsigned int i) : Structures::Part(i) {}
+Node::Node(unsigned int i) : Structures::Part(i), turn(0) {}
 Input::Input(unsigned int i) : Node(i) {}
 
 float NotInputNode::getValue() {
@@ -42,6 +41,15 @@ float NotInputNode::getValue() {
     // so we can set the value to 0 and populate the map.
     // this initiates a clean value check,
     // meaning all synapses are assumed to be unchecked.
+
+    if (turn == DataBits::getTurn()) {
+        //cout << "Net turn: " << DataBits::getTurn() << " Node turn: " << turn << endl;
+        lastValue = value;
+        return value;
+    } else {
+        turn = DataBits::getTurn();
+    }
+
     for (auto syn : synapses) {
         synCheckStatus[syn->getID()] = 'u';
     }
@@ -115,7 +123,7 @@ float RandomInput::getValueInLoop(std::unordered_map<unsigned int, char> statChe
 
 void Node::setValue(float v) { value = v; }
 
-void Node::setFlags(std::vector<Flags::NodeFlag> f) {
+void Node::setFlags(const std::vector<Flags::NodeFlag>& f) {
 
     for (NodeFlag flag : f) {
         addFlag(flag);
@@ -155,11 +163,10 @@ void Node::removeSynapse(Synapses::Synapse* syn) {
 	synapses.erase(remove(synapses.begin(), synapses.end(), syn), synapses.end());
 }
 
-float RandomInput::randFloat() { return (float)(rand()) / (float)(RAND_MAX); }
+float RandomInput::randFloat() { return UtilFunctions::LDRandomFloat(); }
 float RandomInput::randFloat(float min, float max) { return min + (randFloat() * (float)(max - min)); }
 
-int RandomInput::randInt() { return rand(); }
-int RandomInput::randInt(int min, int max) { return min + (randInt() % (max - min)); }
+float RandomInput::randInt(int min, int max) { return UtilFunctions::LDRandomInt(min, max); }
 
 
 float RandomInput::genDefault() { return randFloat(); }
@@ -170,10 +177,8 @@ float RandomInput::genBounded(float min, float max) { return randFloat(min, max)
 float RandomInput::genBoundedInts(int min, int max) { return randInt(min, max); }
 
 
-RandomInput::RandomInput(unsigned int i, int m) : Input(i), mode(m), minimum(0), maximum(1) { srand(time(0)); }
+RandomInput::RandomInput(unsigned int i, int m) : Input(i), mode(m), minimum(0), maximum(1) {}
 RandomInput::RandomInput(unsigned int i, int m, float min, float max) : Input(i), mode(m) {
-	srand(time(0));
-	
 	if (min < max) {
 		minimum = min;
 		maximum = max;
@@ -216,7 +221,11 @@ string Output::saveNode() {
 
 Fireable::Fireable(float t) : fireThreshold(t) {}
 
-bool FireableNode::checkFire() { return value >= fireThreshold; }
+bool FireableNode::checkFire() {
+    float sigmoidValue = 1 / (1 + exp(-value));
+
+    return sigmoidValue >= fireThreshold;
+}
 
 float FireableNode::getValue() {
     NotInputNode::getValue();
@@ -235,7 +244,11 @@ string  FireableNode::saveNode() {
     return "+n4 " + to_string(getID()) + " " + getFlagListString() + to_string(fireThreshold) + " ";
 }
 
-bool ActionNode::checkFire() { return value >= fireThreshold; }
+bool ActionNode::checkFire() {
+    float sigmoidValue = 1 / (1 + exp(-value));
+
+    return sigmoidValue >= fireThreshold;
+}
 
 ActionNode::ActionNode(unsigned int i, float t, int type) : Output(i), Fireable(t), actionType((Flags::ActionFlag)type) {}
 
@@ -256,7 +269,7 @@ float ActionNode::getValue() {
 
 string ActionNode::saveNode() {
     return "+n5 " + to_string(getID()) + " " + getFlagListString()
-            + to_string(fireThreshold) + " " + to_string((int)actionType);
+            + to_string(fireThreshold) + " " + to_string((int)actionType) + " ";
 }
 
 void AddNodeNode::getOutput() {

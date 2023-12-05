@@ -1,5 +1,7 @@
 #pragma once
 
+#include <random>
+
 namespace Flags {
 
     enum class NodeFlag {
@@ -66,4 +68,15 @@ namespace DataBits {
 
     static const int NUM_FLAG_TARGET_TYPES = 0;
     static const int NUM_NODE_FLAGS = 3;
+
+    void initTurn();
+    void incrTurn();
+    unsigned long long int getTurn();
+}
+
+namespace UtilFunctions {
+
+    float LDRandomFloat();
+
+    float LDRandomInt(int min, int max);
 }

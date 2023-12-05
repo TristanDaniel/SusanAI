@@ -11,4 +11,5 @@ add_executable(SusanAI "SusanAI.cpp" "SusanAI.h" "Nodes.h" "Synapses.h" "Synapse
         Handlers.cpp
         Structures.cpp
         LemonDrop.cpp
+        Utils.cpp
 )

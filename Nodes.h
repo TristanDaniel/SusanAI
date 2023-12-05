@@ -21,12 +21,13 @@ namespace Nodes {
 	class Node : public Structures::Part {
 
 	protected:
-		float value{ 0 }, lastValue{ 0 };
+        unsigned long long int turn;
+		float value, lastValue;
 		std::vector<Synapses::Synapse*> synapses{};
 
         std::unordered_map<unsigned int, char> synCheckStatus;
 
-        Flags::NodeFlag cycleFlag = Flags::NodeFlag::PARTIAL_ON_CYCLE;
+        Flags::NodeFlag cycleFlag = Flags::NodeFlag::NONE_FLAG;
         //std::vector<Flags::NodeFlag> flags;
 
         std::string getFlagListString();
@@ -39,7 +40,7 @@ namespace Nodes {
 		virtual float getValue() = 0;
 		void setValue(float v);
 
-        void setFlags(std::vector<Flags::NodeFlag> f);
+        void setFlags(const std::vector<Flags::NodeFlag>& f);
         void addFlag(Flags::NodeFlag f);
         void removeFlag(Flags::NodeFlag f);
         //bool hasFlag(Flags::NodeFlag f);
@@ -86,11 +87,8 @@ namespace Nodes {
 		//Returns float between min and max
 		static float randFloat(float min, float max);
 
-		//Returns int between 0 and max int value
-		static int randInt();
-
 		//Returns int between min and max
-		static int randInt(int min, int max);
+		static float randInt(int min, int max);
 
 
 

@@ -1,6 +1,4 @@
 
-#include <windows.h>
-#include <unistd.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -23,9 +21,9 @@ Controller::Controller() {
 //    std::ofstream saveFile("..\\controller.lsv");
 //    saveFile.close();
 
-    //initController();
+    initController();
 
-    generateInitialController();
+    //generateInitialController();
 
     mainLoop();
 }
@@ -264,7 +262,12 @@ bool Controller::addSynapseToNode(unsigned int synID, unsigned int nodeID, bool 
 
     node->addSynapse(synapse);
 
-    if (!loading) saveActionToFile(">sn " + to_string(synID) + " " + to_string(nodeID) + " ");
+    string saveString = ">sn " + to_string(synID) + " " + to_string(nodeID) + " ";
+
+    if (!loading) {
+        saveActionToFile(saveString);
+        cout << saveString << endl;
+    }
 
     return true;
 }
@@ -275,7 +278,12 @@ bool Controller::addNodeToSynapse(unsigned int nodeID, unsigned int synID, bool 
 
     synapse->setInput(node);
 
-    if (!loading) saveActionToFile(">ns " + to_string(nodeID) + " " + to_string(synID) + " ");
+    string saveString = ">ns " + to_string(nodeID) + " " + to_string(synID) + " ";
+
+    if (!loading) {
+        saveActionToFile(saveString);
+        cout << saveString << endl;
+    }
 
     return true;
 }
@@ -283,7 +291,8 @@ bool Controller::addNodeToSynapse(unsigned int nodeID, unsigned int synID, bool 
 void Controller::getAllOutputs() {
     for (Nodes::Node* output : outputs.getNodes()) {
         if (auto* actionNode = dynamic_cast<Nodes::ActionNode *>(output)) {
-            if (!actionNode->getValue()) {  //warning is fine, ignore
+            if (actionNode->getValue()) {  //warning is fine, ignore
+                actionNode->getOutput();
                 switch (actionNode->getActionType()) {
                     case Flags::ActionFlag::DO_NOTHING:
                         break;
@@ -306,8 +315,12 @@ void Controller::getAllOutputs() {
 }
 
 [[noreturn]] void Controller::mainLoop() {
+    DataBits::initTurn();
     while (true) {
         cout << "loop" << endl;
+
+        DataBits::incrTurn();
+
         getAllOutputs();
         this_thread::sleep_for(chrono::milliseconds(loopwait));
 
@@ -455,6 +468,7 @@ void Controller::loadFromFile() {
                     n->addFlag(static_cast<Flags::NodeFlag>(cycleFlag));
 
                     nodes.addNode(n);
+                    outputs.addNode(n);
                     nodes.checkID(id);
 
                 } else if (infobit == "+s0") {
@@ -509,8 +523,17 @@ void Controller::loadFromFile() {
 
                     n->addSynapse(syn1);
                     syn2->setInput(n);
+                } else if (infobit == "=f") {
+                    // set flag for node
+                    ss >> id;
+
+                    int flag;
+                    ss >> flag;
+
+                    n = nodes.getNodeByID(id);
+                    n->addFlag((Flags::NodeFlag)flag);
                 } else if (infobit == "eff") {
-                    return;
+                        return;
                 }
             }
         }
@@ -543,7 +566,8 @@ void Controller::initController() {
 }
 
 void Controller::actionNodeAddNodeFunction(Nodes::ActionNode *actionNode) {
-    auto* node = dynamic_cast<Nodes::AddNodeNode*>(actionNode);
+//    auto* node = dynamic_cast<Nodes::AddNodeNode*>(actionNode);
+    auto* node = (Nodes::AddNodeNode*)actionNode;
 
     int nodeType = node->getNodeType();
     ParamPackages::NodeParams params = node->getParams();
@@ -564,9 +588,9 @@ void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
     auto* node = dynamic_cast<Nodes::MakeConnectionNode*>(actionNode);
 
     int conType = node->getConnectionType();
-    float id1 = node->getID1();
-    float id2 = node->getID2();
-    float id3 = node->getID3();
+    float id1 = abs(node->getID1());
+    float id2 = abs(node->getID2());
+    float id3 = abs(node->getID3());
 
     switch (conType) {
         case 0:
@@ -621,11 +645,15 @@ void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
 void Controller::actionNodeSetFlagForNodeFunction(Nodes::ActionNode *actionNode) {
     auto* node = dynamic_cast<Nodes::SetFlagNode*>(actionNode);
 
-    unsigned int targetID = (unsigned int)(node->getTargetID() * nodes.getCurrID()) % nodes.getCurrID();
-    auto flag = (Flags::NodeFlag)node->getFlagVal();
+    unsigned int targetID = (unsigned int)(abs(node->getTargetID()) * nodes.getCurrID()) % nodes.getCurrID();
+    auto flag = (Flags::NodeFlag)abs(node->getFlagVal());
 
     Nodes::Node* n = nodes.getNodeByID(targetID);
     n->addFlag(flag);
+
+    string saveString = "=f " + to_string(targetID) + " " + to_string(abs(node->getFlagVal())) + " ";
+    saveActionToFile(saveString);
+    cout << saveString << endl;
 }
 
 
@@ -642,25 +670,36 @@ void Controller::generateInitialController() {
 
     // rand
     for (int i = 0; i < numRand; i++) {
-        Nodes::Node* n = new Nodes::RandomInput(nodes.getNextID(), 4, -10, 10);
+        Nodes::Node* n = new Nodes::RandomInput(nodes.getNextID(), 4, -1, 1);
+
+        saveActionToFile(n->saveNode());
+
         nodes.addNode(n); //0, 1, 2
     }
 
     // fixed
     Nodes::Node* fixedN1 = new Nodes::Input(nodes.getNextID());
-    fixedN1->setValue(0.5);
+    fixedN1->setValue(5 * dist(mt));
+    saveActionToFile(fixedN1->saveNode());
     nodes.addNode(fixedN1); // 3
     Nodes::Node* fixedN2 = new Nodes::Input(nodes.getNextID());
-    fixedN1->setValue(5);
+    fixedN2->setValue(dist(mt));
+    saveActionToFile(fixedN2->saveNode());
     nodes.addNode(fixedN2); // 4
     Nodes::Node* fixedN3 = new Nodes::Input(nodes.getNextID());
-    fixedN1->setValue(-1);
+    fixedN3->setValue(dist(mt));
+    saveActionToFile(fixedN3->saveNode());
     nodes.addNode(fixedN3); // 5
+
+    saveActionToFile("\n");
 
     //// 2 layers of 6 ////
     // 1st 6 layer
     for (int i = 0; i < 6; i++) {
         Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+
+        saveActionToFile(n->saveNode());
+
         nodes.addNode(n); // 6-11
     }
 
@@ -668,6 +707,9 @@ void Controller::generateInitialController() {
     for (int i = 6; i < 12; i++) {
         for (int j = 0; j < 6; j++) {
             Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+            saveActionToFile(syn->saveSynapse());
+
             synapses.addSynapse(syn);
 
             addNodeToSynapse(j, syn->getID(), false);
@@ -675,9 +717,14 @@ void Controller::generateInitialController() {
         }
     }
 
+    saveActionToFile("\n");
+
     // 2nd 6 layer
     for (int i = 0; i < 6; i++) {
         Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+
+        saveActionToFile(n->saveNode());
+
         nodes.addNode(n); // 12-17
     }
 
@@ -685,6 +732,9 @@ void Controller::generateInitialController() {
     for (int i = 12; i < 17; i++) {
         for (int j = 6; j < 12; j++) {
             Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+            saveActionToFile(syn->saveSynapse());
+
             synapses.addSynapse(syn);
 
             addNodeToSynapse(j, syn->getID(), false);
@@ -692,10 +742,15 @@ void Controller::generateInitialController() {
         }
     }
 
+    saveActionToFile("\n");
+
     //// 2 layers of 16 ////
     // 1st 16 layer
     for (int i = 0; i < 16; i++) {
         Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+
+        saveActionToFile(n->saveNode());
+
         nodes.addNode(n); // 18-33
     }
 
@@ -703,6 +758,9 @@ void Controller::generateInitialController() {
     for (int i = 18; i < 34; i++) {
         for (int j = 12; j < 18; j++) {
             Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+            saveActionToFile(syn->saveSynapse());
+
             synapses.addSynapse(syn);
 
             addNodeToSynapse(j, syn->getID(), false);
@@ -710,9 +768,14 @@ void Controller::generateInitialController() {
         }
     }
 
+    saveActionToFile("\n");
+
     // 2nd 16 layer
     for (int i = 0; i < 16; i++) {
         Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+
+        saveActionToFile(n->saveNode());
+
         nodes.addNode(n); // 34-49
     }
 
@@ -720,6 +783,9 @@ void Controller::generateInitialController() {
     for (int i = 34; i < 50; i++) {
         for (int j = 18; j < 34; j++) {
             Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+            saveActionToFile(syn->saveSynapse());
+
             synapses.addSynapse(syn);
 
             addNodeToSynapse(j, syn->getID(), false);
@@ -727,23 +793,36 @@ void Controller::generateInitialController() {
         }
     }
 
+    saveActionToFile("\n");
+
     //// 10 and 8 ////
     // 10
     for (int i = 0; i < 10; i++) {
         Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+
+        saveActionToFile(n->saveNode());
+
         nodes.addNode(n); // 50-59
     }
 
     // 8
     for (int i = 0; i < 8; i++) {
         Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+
+        saveActionToFile(n->saveNode());
+
         nodes.addNode(n); // 60-67
     }
+
+    saveActionToFile("\n");
 
     // 2nd 16 to 10
     for (int i = 50; i < 60; i++) {
         for (int j = 34; j < 50; j++) {
             Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+            saveActionToFile(syn->saveSynapse());
+
             synapses.addSynapse(syn);
 
             addNodeToSynapse(j, syn->getID(), false);
@@ -755,6 +834,9 @@ void Controller::generateInitialController() {
     for (int i = 60; i < 68; i++) {
         for (int j = 34; j < 50; j++) {
             Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+            saveActionToFile(syn->saveSynapse());
+
             synapses.addSynapse(syn);
 
             addNodeToSynapse(j, syn->getID(), false);
@@ -762,23 +844,36 @@ void Controller::generateInitialController() {
         }
     }
 
+    saveActionToFile("\n");
+
     //// param inputs and output value inputs ////
     // 14 param inputs
     for (int i = 0; i < 14; i++) {
         Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+
+        saveActionToFile(n->saveNode());
+
         nodes.addNode(n); // 68-81
     }
 
     // 4 output value inputs
     for (int i = 0; i < 4; i++) {
         Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+
+        saveActionToFile(n->saveNode());
+
         nodes.addNode(n); // 82-85
     }
+
+    saveActionToFile("\n");
 
     // 10 to params
     for (int i = 68; i < 82; i++) {
         for (int j = 50; j < 60; j++) {
             Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+            saveActionToFile(syn->saveSynapse());
+
             synapses.addSynapse(syn);
 
             addNodeToSynapse(j, syn->getID(), false);
@@ -790,6 +885,9 @@ void Controller::generateInitialController() {
     for (int i = 82; i < 86; i++) {
         for (int j = 60; j < 68; j++) {
             Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+            saveActionToFile(syn->saveSynapse());
+
             synapses.addSynapse(syn);
 
             addNodeToSynapse(j, syn->getID(), false);
@@ -797,23 +895,32 @@ void Controller::generateInitialController() {
         }
     }
 
+    saveActionToFile("\n");
+
     //// outputs ////
     // 5 outputs, 86-90
     Nodes::Node* doNothingOutput = new Nodes::ActionNode(nodes.getNextID(), 0.5, 0);
+    saveActionToFile(doNothingOutput->saveNode());
     nodes.addNode(doNothingOutput);
     outputs.addNode(doNothingOutput);
     Nodes::Node* addNodeOutput = new Nodes::AddNodeNode(nodes.getNextID(), 0.5);
+    saveActionToFile(addNodeOutput->saveNode());
     nodes.addNode(addNodeOutput);
     outputs.addNode(addNodeOutput);
     Nodes::Node* addSynOutput = new Nodes::AddSynapseNode(nodes.getNextID(), 0.5);
+    saveActionToFile(addSynOutput->saveNode());
     nodes.addNode(addSynOutput);
     outputs.addNode(addSynOutput);
     Nodes::Node* makeConOutput = new Nodes::MakeConnectionNode(nodes.getNextID(), 0.5);
+    saveActionToFile(makeConOutput->saveNode());
     nodes.addNode(makeConOutput);
     outputs.addNode(makeConOutput);
     Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), 0.5);
+    saveActionToFile(setFlagOutput->saveNode());
     nodes.addNode(setFlagOutput);
     outputs.addNode(setFlagOutput);
+
+    saveActionToFile("\n");
 
     // params to outputs
 
@@ -822,6 +929,9 @@ void Controller::generateInitialController() {
     // add node - 87 - 6 inputs
     for (int i = 0; i < 6; i++) {
         Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+        saveActionToFile(syn->saveSynapse());
+
         synapses.addSynapse(syn);
 
         addNodeToSynapse(68+i, syn->getID(), false);
@@ -831,6 +941,9 @@ void Controller::generateInitialController() {
     // add syn - 88 - 2 inputs
     for (int i = 0; i < 2; i++) {
         Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+        saveActionToFile(syn->saveSynapse());
+
         synapses.addSynapse(syn);
 
         addNodeToSynapse(74+i, syn->getID(), false);
@@ -840,6 +953,9 @@ void Controller::generateInitialController() {
     // make con - 89 - 4 inputs
     for (int i = 0; i < 4; i++) {
         Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+        saveActionToFile(syn->saveSynapse());
+
         synapses.addSynapse(syn);
 
         addNodeToSynapse(76+i, syn->getID(), false);
@@ -849,6 +965,9 @@ void Controller::generateInitialController() {
     // set flag - 90 - 2 inputs
     for (int i = 0; i < 2; i++) {
         Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+        saveActionToFile(syn->saveSynapse());
+
         synapses.addSynapse(syn);
 
         addNodeToSynapse(78+i, syn->getID(), false);
@@ -859,6 +978,9 @@ void Controller::generateInitialController() {
     for (int i = 86; i < 91; i++) {
         for (int j = 82; j < 86; j++) {
             Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+            saveActionToFile(syn->saveSynapse());
+
             synapses.addSynapse(syn);
 
             addNodeToSynapse(j, syn->getID(), false);
@@ -866,14 +988,23 @@ void Controller::generateInitialController() {
         }
     }
 
+    saveActionToFile("\n");
 
     //// extra outputs and syns to play with ////
     for (int i = 0; i < 5; i++) {
         Nodes::Node* n = new Nodes::Output(nodes.getNextID());
+
+        saveActionToFile(n->saveNode());
+
         nodes.addNode(n);
         outputs.addNode(n);
 
         Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
+
+        saveActionToFile(syn->saveSynapse());
+
         synapses.addSynapse(syn);
     }
+
+    saveActionToFile("\n");
 }
