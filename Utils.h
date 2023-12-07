@@ -62,7 +62,7 @@ namespace ParamPackages {
 }
 
 namespace DataBits {
-    static const int NUM_NODE_TYPES = 3; // only 3 are replicable atm
+    static const int NUM_NODE_TYPES = 4; // only 3 are replicable atm
     static const int NUM_SYN_TYPES = 2;
     static const int NUM_CONN_TYPES = 4;
 

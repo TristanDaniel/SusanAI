@@ -156,7 +156,10 @@ void Node::removeFlag(Flags::NodeFlag f) {
 //bool Node::hasFlag(Flags::NodeFlag f) { return find(flags.begin(), flags.end(), f) != flags.end(); }
 
 
-void Node::addSynapse(Synapses::Synapse* syn) { synapses.push_back(syn); }
+void Node::addSynapse(Synapses::Synapse* syn) {
+    syn->setOutput(this);
+    synapses.push_back(syn);
+}
 void Node::removeSynapse(Synapses::Synapse* syn) {
 	//const Synapses::Synapse s = syn;
 
@@ -191,7 +194,7 @@ RandomInput::RandomInput(unsigned int i, int m, float min, float max) : Input(i)
 
 void Output::getOutput() {
 	value = getValue();
-	cout << "Output " << getID() << ": " << value << endl;
+	if (value) cout << "Output " << getID() << ": " << value << endl;
 }
 
 string Node::getFlagListString() {
@@ -275,7 +278,7 @@ string ActionNode::saveNode() {
 void AddNodeNode::getOutput() {
     if (value == 0) return;
 
-    nodeType = nodeTypeInput ? (int)(nodeTypeInput->getData() * DataBits::NUM_NODE_TYPES) % DataBits::NUM_NODE_TYPES : 0;
+    nodeType = nodeTypeInput ? (int)(abs(nodeTypeInput->getData()) * DataBits::NUM_NODE_TYPES) % DataBits::NUM_NODE_TYPES : 0;
     nodeCycleFlag = cycleFlagInput ? (NodeFlag)((int)(cycleFlagInput->getData() * 3) % 3) : NodeFlag::PARTIAL_ON_CYCLE;
     nodeValue = valueInput ? valueInput->getData() : 0;
     mode = modeInput ? (int)(modeInput->getData() * 5) % 5 : 0;

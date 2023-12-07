@@ -14,17 +14,24 @@ WeightedSynapse::WeightedSynapse(unsigned int i, Nodes::Node* inNode, float w) :
 
 
 float PassthroughSynapse::getData() {
-    return input->getValue();
+    return input ? input->getValue() : 0;
 }
 
 float WeightedSynapse::getData() {
-	return input->getValue() * weight;
+	return input ? input->getValue() * weight : 0;
 }
 
 
 unsigned int Synapse::getID() const { return id; }
 
-void Synapse::setInput(Nodes::Node* n) { input = n; }
+void Synapse::setInput(Nodes::Node* n) {
+    input = n;
+}
+
+void Synapse::setOutput(Nodes::Node *n) {
+    if (output) output->removeSynapse(this);
+    output = n;
+}
 
 bool Synapse::operator==(const Synapse& s) const { return id == s.id; }
 
