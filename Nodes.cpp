@@ -22,7 +22,7 @@ using Flags::NodeFlag;
 //using Nodes::ActionNode;
 
 
-Node::Node(unsigned int i) : Structures::Part(i), turn(0) {}
+Node::Node(unsigned int i) : Structures::Part(i), turn(0), value(0), lastValue(0) {}
 Input::Input(unsigned int i) : Node(i) {}
 
 float NotInputNode::getValue() {
@@ -255,8 +255,6 @@ bool ActionNode::checkFire() {
 
 ActionNode::ActionNode(unsigned int i, float t, int type) : Output(i), Fireable(t), actionType((Flags::ActionFlag)type) {}
 
-void ActionNode::setActionType(const Flags::ActionFlag &f) { actionType = f; }
-
 Flags::ActionFlag ActionNode::getActionType() { return actionType; }
 
 float ActionNode::getValue() {
@@ -284,6 +282,8 @@ void AddNodeNode::getOutput() {
     mode = modeInput ? (int)(modeInput->getData() * 5) % 5 : 0;
     min = minInput ? minInput->getData() : 0;
     max = maxInput ? maxInput->getData() : 0;
+    thresholdValue = thresholdInput ? 1 / (1 + exp(-1 * thresholdInput->getData())) : 0.5f;
+    actionTypeValue = actionTypeInput ? (int)(abs(actionTypeInput->getData()) * DataBits::NUM_ACTION_TYPES) % DataBits::NUM_ACTION_TYPES : 0;
 }
 
 //string AddNodeNode::saveNode() {
@@ -301,6 +301,8 @@ ParamPackages::NodeParams AddNodeNode::getParams() {
     params.randInputParams.mode = mode;
     params.randInputParams.min = min;
     params.randInputParams.max = max;
+    params.fireableNodeParams.threshold = thresholdValue;
+    params.actionNodeParams.actionType = actionTypeValue;
 
     return params;
 }
@@ -345,6 +347,14 @@ void AddNodeNode::addSynapse(Synapses::Synapse *syn) {
     }
     if (!maxInput) {
         maxInput = syn;
+        return;
+    }
+    if (!thresholdInput) {
+        thresholdInput = syn;
+        return;
+    }
+    if (!thresholdInput) {
+        thresholdInput = syn;
         return;
     }
 

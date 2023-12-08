@@ -21,8 +21,8 @@ namespace Nodes {
 	class Node : public Structures::Part {
 
 	protected:
-        unsigned long long int turn;
-		float value, lastValue;
+        unsigned long long int turn{};
+		float value{}, lastValue{};
 		std::vector<Synapses::Synapse*> synapses{};
 
         std::unordered_map<unsigned int, char> synCheckStatus;
@@ -165,8 +165,6 @@ namespace Nodes {
 
         ActionNode(unsigned int i, float t, int type);
 
-        void setActionType(const Flags::ActionFlag& f);
-
         Flags::ActionFlag getActionType();
 
         float getValue() override;
@@ -178,16 +176,18 @@ namespace Nodes {
     class AddNodeNode : public ActionNode {
 
     protected:
-        int nodeType = 0, mode = 0;
+        int nodeType = 0, mode = 0, actionTypeValue = 0;
         Flags::NodeFlag nodeCycleFlag = Flags::NodeFlag::PARTIAL_ON_CYCLE;
-        float nodeValue = 0, min = 0, max = 0;
+        float nodeValue = 0, min = 0, max = 0, thresholdValue = 0;
 
         Synapses::Synapse* nodeTypeInput = nullptr,
                          * cycleFlagInput = nullptr,
                          * valueInput = nullptr,
                          * modeInput = nullptr,
                          * minInput = nullptr,
-                         * maxInput = nullptr;
+                         * maxInput = nullptr,
+                         * thresholdInput = nullptr,
+                         * actionTypeInput = nullptr;
 
     public:
 

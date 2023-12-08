@@ -289,12 +289,14 @@ bool Controller::addNodeToSynapse(unsigned int nodeID, unsigned int synID, bool 
 }
 
 void Controller::getAllOutputs() {
+    bool doNothing = false;
     for (Nodes::Node* output : outputs.getNodes()) {
         if (auto* actionNode = dynamic_cast<Nodes::ActionNode *>(output)) {
-            if (actionNode->getValue()) {  //warning is fine, ignore
+            if (!doNothing && actionNode->getValue() == 0) {
                 actionNode->getOutput();
                 switch (actionNode->getActionType()) {
                     case Flags::ActionFlag::DO_NOTHING:
+                        doNothing = true; //prevents other action nodes from firing this turn
                         break;
                     case Flags::ActionFlag::ADD_NODE:
                         actionNodeAddNodeFunction(actionNode);
@@ -323,9 +325,6 @@ void Controller::getAllOutputs() {
 
         getAllOutputs();
         this_thread::sleep_for(chrono::milliseconds(loopwait));
-
-        //sleep(1);
-
     }
 }
 

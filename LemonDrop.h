@@ -13,8 +13,11 @@ namespace LemonDrop {
 
         Handlers::NodeHandler nodes;
         Handlers::NodeHandler outputs;
+        Handlers::NodeHandler fireables;
+        Handlers::NodeHandler unusedNodes;
 
         Handlers::SynapseHandler synapses;
+        Handlers::SynapseHandler unusedSynapse;
 
         int loopwait = 1000;
 

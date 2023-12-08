@@ -2,6 +2,7 @@
 #include <algorithm>
 #include "Handlers.h"
 
+using Handlers::Handler;
 using Handlers::NodeHandler;
 using Handlers::SynapseHandler;
 
@@ -13,11 +14,13 @@ void NodeHandler::InitHandler() {
 
 void NodeHandler::addNode(Nodes::Node* n) {
     nodes.push_back(n);
+    items++;
 }
 
 void NodeHandler::removeNodeByID(int id) {
-    nodes.erase(std::remove_if(nodes.begin(), nodes.end(),
-                               [&id](Nodes::Node* node) { return node->getID() == id; }),nodes.end());
+    if (nodes.erase(std::remove_if(nodes.begin(), nodes.end(),
+                               [&id](Nodes::Node* node) { return node->getID() == id; }),nodes.end())
+                               != nodes.end()) items--;
 }
 
 Nodes::Node* NodeHandler::getNodeByID(unsigned int id) {
@@ -25,8 +28,8 @@ Nodes::Node* NodeHandler::getNodeByID(unsigned int id) {
                          [&id](Nodes::Node* node) { return node->getID() == id;});
 }
 
-unsigned int NodeHandler::getCurrID() const { return nextID; }
-unsigned int NodeHandler::getNextID() { return nextID++; }
+unsigned int Handler::getCurrID() const { return nextID; }
+unsigned int Handler::getNextID() { return nextID++; }
 
 std::vector<Nodes::Node*> NodeHandler::getNodes() {
     return nodes;
@@ -40,11 +43,13 @@ void SynapseHandler::InitHandler() {
 
 void SynapseHandler::addSynapse(Synapses::Synapse *s) {
     synapses.push_back(s);
+    items++;
 }
 
 void SynapseHandler::removeSynapseByID(int id) {
-    synapses.erase(std::remove_if(synapses.begin(), synapses.end(),
-                                  [&id](Synapses::Synapse* synapse) { return synapse->getID() == id; }),synapses.end());
+    if (synapses.erase(std::remove_if(synapses.begin(), synapses.end(),
+                                  [&id](Synapses::Synapse* synapse) { return synapse->getID() == id; }),synapses.end())
+                                  != synapses.end()) items--;
 }
 
 Synapses::Synapse* SynapseHandler::getSynapseByID(unsigned int id) {
@@ -52,10 +57,7 @@ Synapses::Synapse* SynapseHandler::getSynapseByID(unsigned int id) {
                          [&id](Synapses::Synapse* synapse) { return synapse->getID() == id;});
 }
 
-unsigned int SynapseHandler::getCurrID() const { return nextID; }
-unsigned int SynapseHandler::getNextID() { return nextID++; }
+void Handler::checkID(unsigned int id) { if (id > nextID) nextID = id; }
 
-void NodeHandler::checkID(unsigned int id) { if (id > nextID) nextID = id; }
-void SynapseHandler::checkID(unsigned int id) { if (id > nextID) nextID = id; }
-
+int Handler::getNumItems() const { return items; }
 
