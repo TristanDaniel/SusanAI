@@ -19,7 +19,25 @@ namespace LemonDrop {
         Handlers::SynapseHandler synapses;
         Handlers::SynapseHandler unusedSynapse;
 
+        Nodes::Input* unusedNodesInput,
+                    * unusedSynsInput,
+                    * networkSizeInput,
+                    * fitnessInput,
+                    * fitnessDeltaInput,
+                    * fitnessAvgInput,
+                    * turnsSinceFitnessDecInput,
+                    * outputCalcTimeInput;
+
         int loopwait = 1000;
+
+        float fitness, prevFitness;
+        int fitDecTurns;
+        long long int calcTime{};
+        int fitAvgTurns = 10;
+        UtilClasses::RunningAverage<float> fitnessAvg;
+        int calcAvgTurns = 10;
+        UtilClasses::RunningAverage<long long int> calcAvg;
+
 
 
         bool newNode(unsigned int type, ParamPackages::NodeParams params);

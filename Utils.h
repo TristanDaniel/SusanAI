@@ -1,6 +1,7 @@
 #pragma once
 
 #include <random>
+#include <queue>
 
 namespace Flags {
 
@@ -80,4 +81,21 @@ namespace UtilFunctions {
     float LDRandomFloat();
 
     float LDRandomInt(int min, int max);
+}
+
+namespace UtilClasses {
+
+    template <typename T> class RunningAverage {
+    protected:
+        std::queue<T> que;
+        T total{0};
+        int buffSize{0};
+
+    public:
+        RunningAverage() = default;
+        explicit RunningAverage(int bs) : total(0), buffSize(bs) {}
+
+        void addValue(T val);
+        float getAverage();
+    };
 }

@@ -18,6 +18,9 @@ Controller::Controller() {
     outputs.InitHandler();
     synapses.InitHandler();
 
+    fitnessAvg = UtilClasses::RunningAverage<float>(10);
+    calcAvg = UtilClasses::RunningAverage<long long int>(10);
+
 //    std::ofstream saveFile("..\\controller.lsv");
 //    saveFile.close();
 
@@ -290,6 +293,8 @@ bool Controller::addNodeToSynapse(unsigned int nodeID, unsigned int synID, bool 
 
 void Controller::getAllOutputs() {
     bool doNothing = false;
+    auto start = chrono::high_resolution_clock::now();
+
     for (Nodes::Node* output : outputs.getNodes()) {
         if (auto* actionNode = dynamic_cast<Nodes::ActionNode *>(output)) {
             if (!doNothing && actionNode->getValue() == 0) {
@@ -314,6 +319,10 @@ void Controller::getAllOutputs() {
             }
         } else ((Nodes::Output *) output)->getOutput();
     }
+
+    auto stop = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
+    calcTime = duration.count();
 }
 
 [[noreturn]] void Controller::mainLoop() {
@@ -424,9 +433,6 @@ void Controller::loadFromFile() {
 
                 } else if (infobit == "+n5") {
                     // action
-                    // action type tells which action node to make
-                    // dont need separate nodetype checks,
-                    // just use switch to know which one to make
 
                     ss >> id;
                     ss >> cycleFlag;
