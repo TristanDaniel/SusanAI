@@ -71,6 +71,11 @@ namespace LemonDrop {
 
         void generateInitialController();
 
+        void updateCalcTimes(long long int time);
+
+        void checkUnusedNode(Nodes::Node* node);
+        void checkUnusedSynapse(Synapses::Synapse* syn);
+
 
     public:
         Controller();

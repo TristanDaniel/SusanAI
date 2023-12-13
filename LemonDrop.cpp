@@ -323,6 +323,7 @@ void Controller::getAllOutputs() {
     auto stop = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
     calcTime = duration.count();
+    updateCalcTimes(calcTime);
 }
 
 [[noreturn]] void Controller::mainLoop() {
@@ -1013,3 +1014,8 @@ void Controller::generateInitialController() {
 
     saveActionToFile("\n");
 }
+
+void Controller::updateCalcTimes(long long int time) {
+    calcAvg.addValue(time);
+}
+
