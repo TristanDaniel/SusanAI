@@ -42,3 +42,10 @@ string PassthroughSynapse::saveSynapse() {
 string WeightedSynapse::saveSynapse() {
     return "+s1 " + to_string(getID()) + " " + to_string(weight) + " ";
 }
+
+bool Synapse::isUnused() {
+    return !(input && output);
+}
+
+
+

@@ -432,7 +432,9 @@ float SetFlagNode::getTargetID() const { return targetID; }
 int SetFlagNode::getFlagVal() const { return flagVal; }
 
 
-
+bool Node::isUnused() {
+    return (synapses.empty() && outputs.empty());
+}
 
 
 

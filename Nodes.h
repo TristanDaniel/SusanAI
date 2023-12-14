@@ -24,6 +24,7 @@ namespace Nodes {
         unsigned long long int turn{};
 		float value{}, lastValue{};
 		std::vector<Synapses::Synapse*> synapses{};
+        std::vector<Synapses::Synapse*> outputs{};
 
         std::unordered_map<unsigned int, char> synCheckStatus;
 
@@ -51,6 +52,8 @@ namespace Nodes {
 
 		virtual void addSynapse(Synapses::Synapse* syn);
 		void removeSynapse(Synapses::Synapse* syn);
+
+        bool isUnused();
 
         virtual std::string saveNode() = 0;
 	};

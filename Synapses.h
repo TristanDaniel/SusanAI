@@ -26,6 +26,8 @@ namespace Synapses {
 		void setInput(Nodes::Node* n);
         void setOutput(Nodes::Node* n);
 
+        bool isUnused();
+
         virtual std::string saveSynapse() = 0;
 
 		bool operator==(const Synapse& s) const;

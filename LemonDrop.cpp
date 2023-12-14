@@ -47,6 +47,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
             n->addFlag(params.basicNodeParams.cycleFlag);
 
             nodes.addNode(n);
+            unusedNodes.addNode(n);
 
             saveActionToFile(n->saveNode());
 
@@ -65,6 +66,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
             n->setValue(params.basicNodeParams.value);
 
             nodes.addNode(n);
+            unusedNodes.addNode(n);
 
             saveActionToFile(n->saveNode());
 
@@ -87,6 +89,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
             n->addFlag(params.randInputParams.cycleFlag);
 
             nodes.addNode(n);
+            unusedNodes.addNode(n);
 
             saveActionToFile(n->saveNode());
 
@@ -106,6 +109,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             outputs.addNode(n);
             nodes.addNode(n);
+            unusedNodes.addNode(n);
 
             saveActionToFile(n->saveNode());
 
@@ -126,6 +130,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             //outputs.addNode(n);
             nodes.addNode(n);
+            unusedNodes.addNode(n);
 
             saveActionToFile(n->saveNode());
 
@@ -171,6 +176,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             outputs.addNode(n);
             nodes.addNode(n);
+            unusedNodes.addNode(n);
 
             saveActionToFile(n->saveNode());
 
@@ -226,6 +232,7 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
             s = new Synapses::PassthroughSynapse(id);
 
             synapses.addSynapse(s);
+            unusedSynapse.addSynapse(s);
 
             saveActionToFile(s->saveSynapse());
 
@@ -244,6 +251,7 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
             s = new Synapses::WeightedSynapse(id, weight);
 
             synapses.addSynapse(s);
+            unusedSynapse.addSynapse(s);
 
             saveActionToFile(s->saveSynapse());
 
