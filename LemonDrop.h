@@ -19,18 +19,18 @@ namespace LemonDrop {
         Handlers::SynapseHandler synapses;
         Handlers::SynapseHandler unusedSynapses;
 
-        Nodes::Input* unusedNodesInput,
-                    * unusedSynsInput,
-                    * networkSizeInput,
-                    * fitnessInput,
-                    * fitnessDeltaInput,
-                    * fitnessAvgInput,
-                    * turnsSinceFitnessDecInput,
-                    * outputCalcTimeInput;
+        Nodes::Input* unusedNodesInput = new Nodes::Input(0),
+                    * unusedSynsInput = new Nodes::Input(0),
+                    * networkSizeInput = new Nodes::Input(0),
+                    * fitnessInput = new Nodes::Input(0),
+                    * fitnessDeltaInput = new Nodes::Input(0),
+                    * fitnessAvgInput = new Nodes::Input(0),
+                    * turnsSinceFitnessDecInput = new Nodes::Input(0),
+                    * outputCalcTimeInput = new Nodes::Input(0);
 
         int loopwait = 1000;
 
-        float fitness, prevFitness;
+        float fitness, prevFitness, fitnessDelta;
         int fitDecTurns;
         long long int calcTime{};
         int fitAvgTurns = 10;
@@ -74,7 +74,10 @@ namespace LemonDrop {
         float getUnusedPartFitnessImpact();
         float getCalcTimeFitnessImpact();
         float getFitnessFitnessImpact();
-        float getFitness();
+        float calcFitness();
+        [[nodiscard]] float getFitness() const;
+
+        void setMetricInputs();
 
 
     public:

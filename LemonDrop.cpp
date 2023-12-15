@@ -19,8 +19,14 @@ Controller::Controller() {
     outputs.InitHandler();
     synapses.InitHandler();
 
-    fitnessAvg = UtilClasses::RunningAverage<float>(10);
-    calcAvg = UtilClasses::RunningAverage<long long int>(10);
+    fitnessAvg = UtilClasses::RunningAverage<float>(fitAvgTurns);
+    calcAvg = UtilClasses::RunningAverage<long long int>(calcAvgTurns);
+
+    fitness = 100;
+    prevFitness = 100;
+    fitnessDelta = 0;
+    calcTime = 3000000;
+    fitDecTurns = 1;
 
 //    std::ofstream saveFile("..\\controller.lsv");
 //    saveFile.close();
@@ -346,6 +352,8 @@ void Controller::getAllOutputs() {
     auto stop = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
     calcTime = duration.count();
+    calcAvg.addValue(calcTime);
+    cout << (calcAvg.getAverage() / 1000) << ", " << outputs.getNumItems() << endl;
 }
 
 [[noreturn]] void Controller::mainLoop() {
@@ -354,6 +362,9 @@ void Controller::getAllOutputs() {
         cout << "loop" << endl;
 
         DataBits::incrTurn();
+
+        setMetricInputs();
+        cout << "F: " << fitness << endl;
 
         getAllOutputs();
         this_thread::sleep_for(chrono::milliseconds(loopwait));
@@ -713,6 +724,10 @@ void Controller::generateInitialController() {
     std::uniform_real_distribution<float> dist(-1, 1);
 
 
+    fitnessInput = new Nodes::Input(nodes.getNextID());
+
+
+
     //// base inputs ////
     const int numRand = 3;
     const int numFixed = 3;
@@ -1059,37 +1074,74 @@ void Controller::generateInitialController() {
 }
 
 float Controller::getUnusedPartFitnessImpact() {
-    int uunodes = unusedNodes.getNumItems();
-    int uusyns = unusedSynapses.getNumItems();
-    int totalNetSize = nodes.getNumItems() + synapses.getNumItems();
+    auto uunodes = (float)unusedNodes.getNumItems();
+    auto uusyns = (float)unusedSynapses.getNumItems();
+    auto totalNetSize = (float)nodes.getNumItems() + (float)synapses.getNumItems();
 
-    float scaledUURatio = 1 + (float)(uunodes + (2 * (uusyns))) / (float)totalNetSize;
+    float scaledUURatio = 1 + (uunodes + (2 * (uusyns))) / totalNetSize;
 
-    float impactValue = (-1 * (0.1 * totalNetSize) - ((2 * uusyns) + uunodes))
+    float impactValue = (-1 * (0.1f * totalNetSize) - ((2 * uusyns) + uunodes))
                         + ((pow(scaledUURatio, uunodes) / totalNetSize)
                             + (pow(scaledUURatio, uusyns) / totalNetSize));
 
-    return impactValue > 0 ? impactValue : 0;
+    cout << min(max(0.0f, impactValue), 100.0f) << endl;
+
+    return min(max(0.0f, impactValue), 100.0f);
 }
 
 float Controller::getCalcTimeFitnessImpact() {
     float avgCalcPerOutput = calcAvg.getAverage() / (float)outputs.getNumItems();
     float currCalcPerOutput = (float)calcTime / (float)outputs.getNumItems();
+    float avgToCurrCalcRatio = avgCalcPerOutput / currCalcPerOutput;
 
     // take nanosecons per second, scale to nanoseconds per cycle delay, divide by total outputs to get optimal time usage
-    // subtract actual time per output to determine if suboptimal performance is reached
-    float largeAvgCalcTimePunishment = ((float)((1000000000.0f * (loopwait / 1000.0f)) / outputs.getNumItems()) - avgCalcPerOutput);
+    // subtract actual time per output to determine if suboptimal performance is reached. divide by 10mil for scaling
+    float largeAvgCalcTimePunishment = (((1000000000.0f * ((float)loopwait / 1000)) / (float)outputs.getNumItems()) - (avgCalcPerOutput * ((float)loopwait / 1000))) / 10000000;
 
+    // avgCalcPerOutput scales so that lower calcTime compared to average is good. largeAvg punishment increases percentage
+    // when the avg time is lower than the time needed to make calculations take as long as the cycle delay. out of 100
+    // to get a basic percentage and then a multiplyer. lower avg and bigger improvement is good
+    float impactValue = (100 * avgToCurrCalcRatio + largeAvgCalcTimePunishment) / 100;
 
+    cout << impactValue << endl;
+
+    return impactValue;
 }
 
 float Controller::getFitnessFitnessImpact() {
+    float fitnessCurrToAvgRatio = prevFitness / ((bool)fitnessAvg.getAverage() ? fitnessAvg.getAverage() : 1);
+    float decTurnsScaled = (float)fitDecTurns / ((float)log(fitDecTurns + 0.272) + 1);
 
+    float impactValue = decTurnsScaled * fitnessCurrToAvgRatio;
+
+    cout << impactValue << endl;
+
+    return impactValue;
 }
 
-float Controller::getFitness() {
+float Controller::calcFitness() {
+    fitness = 100 * getCalcTimeFitnessImpact() + getFitnessFitnessImpact() - getUnusedPartFitnessImpact();
+    fitDecTurns = fitness >= prevFitness ? fitDecTurns + 1 : 1;
+    fitnessDelta = fitness - prevFitness;
+    prevFitness = fitness;
+    fitnessAvg.addValue(fitness);
 
+    return fitness;
 }
 
+float Controller::getFitness() const { return fitness; }
+
+void Controller::setMetricInputs() {
+    unusedNodesInput->setValue((float)unusedNodes.getNumItems());
+    unusedSynsInput->setValue((float)unusedSynapses.getNumItems());
+    networkSizeInput->setValue((float)nodes.getNumItems() + (float)synapses.getNumItems());
+
+    fitnessInput->setValue(calcFitness());
+    fitnessDeltaInput->setValue(fitnessDelta);
+    fitnessAvgInput->setValue(fitnessAvg.getAverage());
+    turnsSinceFitnessDecInput->setValue((float)fitDecTurns);
+
+    outputCalcTimeInput->setValue((float)calcTime / 1000000.0f);
+}
 
 
