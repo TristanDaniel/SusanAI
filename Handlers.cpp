@@ -17,7 +17,7 @@ void NodeHandler::addNode(Nodes::Node* n) {
     items++;
 }
 
-void NodeHandler::removeNodeByID(int id) {
+void NodeHandler::removeNodeByID(unsigned int id) {
     if (nodes.erase(std::remove_if(nodes.begin(), nodes.end(),
                                [&id](Nodes::Node* node) { return node->getID() == id; }),nodes.end())
                                != nodes.end()) items--;
@@ -46,7 +46,7 @@ void SynapseHandler::addSynapse(Synapses::Synapse *s) {
     items++;
 }
 
-void SynapseHandler::removeSynapseByID(int id) {
+void SynapseHandler::removeSynapseByID(unsigned int id) {
     if (synapses.erase(std::remove_if(synapses.begin(), synapses.end(),
                                   [&id](Synapses::Synapse* synapse) { return synapse->getID() == id; }),synapses.end())
                                   != synapses.end()) items--;

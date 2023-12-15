@@ -52,6 +52,7 @@ namespace Nodes {
 
 		virtual void addSynapse(Synapses::Synapse* syn);
 		void removeSynapse(Synapses::Synapse* syn);
+        void removeOutputSynapse(Synapses::Synapse* syn);
 
         bool isUnused();
 

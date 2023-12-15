@@ -36,7 +36,7 @@ namespace Handlers{
         void InitHandler();
 
         void addNode(Nodes::Node* n);
-        void removeNodeByID(int id);
+        void removeNodeByID(unsigned int id);
 
         Nodes::Node* getNodeByID(unsigned int id);
 
@@ -57,7 +57,7 @@ namespace Handlers{
         void InitHandler();
 
         void addSynapse(Synapses::Synapse* s);
-        void removeSynapseByID(int id);
+        void removeSynapseByID(unsigned int id);
 
         Synapses::Synapse* getSynapseByID(unsigned int id);
     };

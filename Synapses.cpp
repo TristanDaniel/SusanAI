@@ -25,6 +25,7 @@ float WeightedSynapse::getData() {
 unsigned int Synapse::getID() const { return id; }
 
 void Synapse::setInput(Nodes::Node* n) {
+    if (input) input->removeOutputSynapse(this);
     input = n;
 }
 

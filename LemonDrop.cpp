@@ -5,6 +5,7 @@
 #include <chrono>
 #include <thread>
 #include <random>
+#include <cmath>
 
 #include "LemonDrop.h"
 #include "Utils.h"
@@ -27,6 +28,8 @@ Controller::Controller() {
     initController();
 
     //generateInitialController();
+
+    saveActionToFile("\n");
 
     mainLoop();
 }
@@ -232,7 +235,7 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
             s = new Synapses::PassthroughSynapse(id);
 
             synapses.addSynapse(s);
-            unusedSynapse.addSynapse(s);
+            unusedSynapses.addSynapse(s);
 
             saveActionToFile(s->saveSynapse());
 
@@ -251,7 +254,7 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
             s = new Synapses::WeightedSynapse(id, weight);
 
             synapses.addSynapse(s);
-            unusedSynapse.addSynapse(s);
+            unusedSynapses.addSynapse(s);
 
             saveActionToFile(s->saveSynapse());
 
@@ -271,7 +274,13 @@ bool Controller::addSynapseToNode(unsigned int synID, unsigned int nodeID, bool 
     Synapses::Synapse* synapse = synapses.getSynapseByID(synID);
     Nodes::Node* node = nodes.getNodeByID(nodeID);
 
+    bool synuu = synapse->isUnused();
+    bool nodeuu = node->isUnused();
+
     node->addSynapse(synapse);
+
+    if (synuu && !synapse->isUnused()) unusedSynapses.removeSynapseByID(synID);
+    if (nodeuu && !node->isUnused()) unusedNodes.removeNodeByID(nodeID);
 
     string saveString = ">sn " + to_string(synID) + " " + to_string(nodeID) + " ";
 
@@ -287,7 +296,13 @@ bool Controller::addNodeToSynapse(unsigned int nodeID, unsigned int synID, bool 
     Synapses::Synapse* synapse = synapses.getSynapseByID(synID);
     Nodes::Node* node = nodes.getNodeByID(nodeID);
 
+    bool synuu = synapse->isUnused();
+    bool nodeuu = node->isUnused();
+
     synapse->setInput(node);
+
+    if (synuu && !synapse->isUnused()) unusedSynapses.removeSynapseByID(synID);
+    if (nodeuu && !node->isUnused()) unusedNodes.removeNodeByID(nodeID);
 
     string saveString = ">ns " + to_string(nodeID) + " " + to_string(synID) + " ";
 
@@ -381,6 +396,7 @@ void Controller::loadFromFile() {
                     n->addFlag(static_cast<Flags::NodeFlag>(cycleFlag));
 
                     nodes.addNode(n);
+                    unusedNodes.addNode(n);
                     nodes.checkID(id);
                 } else if (infobit == "+n1") {
                     // input
@@ -395,6 +411,7 @@ void Controller::loadFromFile() {
                     n->setValue(val);
 
                     nodes.addNode(n);
+                    unusedNodes.addNode(n);
                     nodes.checkID(id);
                 } else if (infobit == "+n2") {
                     // Random input
@@ -410,6 +427,7 @@ void Controller::loadFromFile() {
                     n = new Nodes::RandomInput(id, mode, min, max);
 
                     nodes.addNode(n);
+                    unusedNodes.addNode(n);
                     nodes.checkID(id);
                 } else if (infobit == "+n3") {
                     // Output
@@ -422,6 +440,7 @@ void Controller::loadFromFile() {
 
                     nodes.addNode(n);
                     outputs.addNode(n);
+                    unusedNodes.addNode(n);
                     nodes.checkID(id);
                 } else if (infobit == "+n4") {
                     // fireable
@@ -437,6 +456,7 @@ void Controller::loadFromFile() {
                     n->addFlag(static_cast<Flags::NodeFlag>(cycleFlag));
 
                     nodes.addNode(n);
+                    unusedNodes.addNode(n);
                     nodes.checkID(id);
 
                 } else if (infobit == "+n5") {
@@ -482,6 +502,7 @@ void Controller::loadFromFile() {
 
                     nodes.addNode(n);
                     outputs.addNode(n);
+                    unusedNodes.addNode(n);
                     nodes.checkID(id);
 
                 } else if (infobit == "+s0") {
@@ -491,6 +512,7 @@ void Controller::loadFromFile() {
                     syn = new Synapses::PassthroughSynapse(id);
 
                     synapses.addSynapse(syn);
+                    unusedSynapses.addSynapse(syn);
                     synapses.checkID(id);
                 } else if (infobit == "+s1") {
                     //weighted syn
@@ -501,6 +523,7 @@ void Controller::loadFromFile() {
                     syn = new Synapses::WeightedSynapse(id, weight);
 
                     synapses.addSynapse(syn);
+                    unusedSynapses.addSynapse(syn);
                     synapses.checkID(id);
                 } else if (infobit == ">sn") {
                     int id1, id2;
@@ -534,8 +557,14 @@ void Controller::loadFromFile() {
                     Synapses::Synapse* syn1 = synapses.getSynapseByID(s1);
                     Synapses::Synapse* syn2 = synapses.getSynapseByID(s2);
 
+                    bool s1uu = syn1->isUnused();
+                    bool s2uu = syn2->isUnused();
+
                     n->addSynapse(syn1);
                     syn2->setInput(n);
+
+                    if (s1uu && !syn1->isUnused()) unusedSynapses.removeSynapseByID(s1);
+                    if (s2uu && !syn2->isUnused()) unusedSynapses.removeSynapseByID(s2);
                 } else if (infobit == "=f") {
                     // set flag for node
                     ss >> id;
@@ -646,8 +675,15 @@ void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
             Synapses::Synapse* s1 = synapses.getSynapseByID(synID);
             Synapses::Synapse* s2 = synapses.getSynapseByID(syn2ID);
 
+            bool s1uu = s1->isUnused();
+            bool s2uu = s2->isUnused();
+
             n->addSynapse(s1);
             s2->setInput(n);
+
+            if (s1uu && !s1->isUnused()) unusedSynapses.removeSynapseByID(synID);
+            if (s2uu && !s2->isUnused()) unusedSynapses.removeSynapseByID(syn2ID);
+
             break;
         }
         default:
@@ -1021,3 +1057,39 @@ void Controller::generateInitialController() {
 
     saveActionToFile("\n");
 }
+
+float Controller::getUnusedPartFitnessImpact() {
+    int uunodes = unusedNodes.getNumItems();
+    int uusyns = unusedSynapses.getNumItems();
+    int totalNetSize = nodes.getNumItems() + synapses.getNumItems();
+
+    float scaledUURatio = 1 + (float)(uunodes + (2 * (uusyns))) / (float)totalNetSize;
+
+    float impactValue = (-1 * (0.1 * totalNetSize) - ((2 * uusyns) + uunodes))
+                        + ((pow(scaledUURatio, uunodes) / totalNetSize)
+                            + (pow(scaledUURatio, uusyns) / totalNetSize));
+
+    return impactValue > 0 ? impactValue : 0;
+}
+
+float Controller::getCalcTimeFitnessImpact() {
+    float avgCalcPerOutput = calcAvg.getAverage() / (float)outputs.getNumItems();
+    float currCalcPerOutput = (float)calcTime / (float)outputs.getNumItems();
+
+    // take nanosecons per second, scale to nanoseconds per cycle delay, divide by total outputs to get optimal time usage
+    // subtract actual time per output to determine if suboptimal performance is reached
+    float largeAvgCalcTimePunishment = ((float)((1000000000.0f * (loopwait / 1000.0f)) / outputs.getNumItems()) - avgCalcPerOutput);
+
+
+}
+
+float Controller::getFitnessFitnessImpact() {
+
+}
+
+float Controller::getFitness() {
+
+}
+
+
+

@@ -17,7 +17,7 @@ namespace LemonDrop {
         Handlers::NodeHandler unusedNodes;
 
         Handlers::SynapseHandler synapses;
-        Handlers::SynapseHandler unusedSynapse;
+        Handlers::SynapseHandler unusedSynapses;
 
         Nodes::Input* unusedNodesInput,
                     * unusedSynsInput,
@@ -70,6 +70,11 @@ namespace LemonDrop {
 //        void actionNodeSynToSynFunction(Nodes::MakeConnectionNode* node);
 
         void generateInitialController();
+
+        float getUnusedPartFitnessImpact();
+        float getCalcTimeFitnessImpact();
+        float getFitnessFitnessImpact();
+        float getFitness();
 
 
     public:

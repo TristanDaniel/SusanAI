@@ -433,7 +433,11 @@ int SetFlagNode::getFlagVal() const { return flagVal; }
 
 
 bool Node::isUnused() {
-    return (synapses.empty() && outputs.empty());
+    return !(synapses.empty() || outputs.empty());
+}
+
+void Node::removeOutputSynapse(Synapses::Synapse *syn) {
+    outputs.erase(remove(outputs.begin(), outputs.end(), syn), outputs.end());
 }
 
 
