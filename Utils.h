@@ -95,7 +95,17 @@ namespace UtilClasses {
         RunningAverage() = default;
         explicit RunningAverage(int bs) : total(0), buffSize(bs) {}
 
-        void addValue(T val);
-        float getAverage();
+        void addValue(T val) {
+            total += val;
+            que.push(val);
+
+            if (que.size() > buffSize) {
+                total -= que.front();
+                que.pop();
+            }
+        }
+        float getAverage() {
+            return (float)(total / que.size());
+        }
     };
 }

@@ -22,17 +22,3 @@ float UtilFunctions::LDRandomInt(int min, int max) {
     return dist(mt);
 
 }
-
-template <typename T> void UtilClasses::RunningAverage<T>::addValue(T val) {
-    total += val;
-    que.push(val);
-
-    if (que.size() > buffSize) {
-        total -= que.front();
-        que.pop();
-    }
-}
-
-template <typename T> float UtilClasses::RunningAverage<T>::getAverage() {
-    return (float)(total / que.size());
-}
