@@ -17,7 +17,13 @@ using LemonDrop::Controller;
 Controller::Controller() {
     nodes.InitHandler();
     outputs.InitHandler();
+    fireables.InitHandler();
+    valueInputs.InitHandler();
+    unusedNodes.InitHandler();
+
     synapses.InitHandler();
+    weightedSynapses.InitHandler();
+    unusedSynapses.InitHandler();
 
     fitnessAvg = UtilClasses::RunningAverage<float>(fitAvgTurns);
     calcAvg = UtilClasses::RunningAverage<long long int>(calcAvgTurns);
@@ -177,6 +183,8 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
                     // set flag
                     n = new Nodes::SetFlagNode(id, threshold);
                     break;
+                case 5:
+                    n = new Nodes::UpdateWeightNode(id, threshold);
                 default:
                     // invalid input punished with do nothing action
                     n = new Nodes::ActionNode(id, threshold, 0);
@@ -260,6 +268,7 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
             s = new Synapses::WeightedSynapse(id, weight);
 
             synapses.addSynapse(s);
+            weightedSynapses.addSynapse(s);
             unusedSynapses.addSynapse(s);
 
             saveActionToFile(s->saveSynapse());
@@ -277,18 +286,28 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
 }
 
 bool Controller::addSynapseToNode(unsigned int synID, unsigned int nodeID, bool loading) {
-    Synapses::Synapse* synapse = synapses.getSynapseByID(synID);
-    Nodes::Node* node = nodes.getNodeByID(nodeID);
+    return addSynapseToNode(synID, false, nodeID, false, loading);
+}
+bool Controller::addSynapseToNode(unsigned int synID, bool uuSyn, unsigned int nodeID, bool uuNode, bool loading) {
+    Synapses::Synapse* synapse = uuSyn ? unusedSynapses.getSynapseByCount(synID)
+            : synapses.getSynapseByID(synID);
+    Nodes::Node* node = uuNode ? unusedNodes.getNodeByCount(nodeID)
+            : nodes.getNodeByID(nodeID);
 
     bool synuu = synapse->isUnused();
     bool nodeuu = node->isUnused();
 
+    Nodes::Node* prevSynOutput = synapse->getOutput();
+
     node->addSynapse(synapse);
 
+    if (prevSynOutput && prevSynOutput->isUnused()) unusedNodes.addNode(prevSynOutput);
+
     if (synuu && !synapse->isUnused()) unusedSynapses.removeSynapseByID(synID);
+    else if (!synuu && synapse->isUnused()) unusedSynapses.addSynapse(synapse);
     if (nodeuu && !node->isUnused()) unusedNodes.removeNodeByID(nodeID);
 
-    string saveString = ">sn " + to_string(synID) + " " + to_string(nodeID) + " ";
+    string saveString = ">sn " + to_string(synapse->getID()) + " " + to_string(node->getID()) + " ";
 
     if (!loading) {
         saveActionToFile(saveString);
@@ -299,18 +318,27 @@ bool Controller::addSynapseToNode(unsigned int synID, unsigned int nodeID, bool 
 }
 
 bool Controller::addNodeToSynapse(unsigned int nodeID, unsigned int synID, bool loading) {
-    Synapses::Synapse* synapse = synapses.getSynapseByID(synID);
-    Nodes::Node* node = nodes.getNodeByID(nodeID);
+    return addNodeToSynapse(nodeID, false, synID, false, loading);
+}
+bool Controller::addNodeToSynapse(unsigned int nodeID, bool uuNode, unsigned int synID, bool uuSyn, bool loading) {
+    Synapses::Synapse* synapse = uuSyn ? unusedSynapses.getSynapseByCount(synID)
+                                       : synapses.getSynapseByID(synID);
+    Nodes::Node* node = uuNode ? unusedNodes.getNodeByCount(nodeID)
+                               : nodes.getNodeByID(nodeID);
 
     bool synuu = synapse->isUnused();
     bool nodeuu = node->isUnused();
 
+    Nodes::Node* prevSynInput = synapse->getInput();
+
     synapse->setInput(node);
+
+    if (prevSynInput && prevSynInput->isUnused()) unusedNodes.addNode(prevSynInput);
 
     if (synuu && !synapse->isUnused()) unusedSynapses.removeSynapseByID(synID);
     if (nodeuu && !node->isUnused()) unusedNodes.removeNodeByID(nodeID);
 
-    string saveString = ">ns " + to_string(nodeID) + " " + to_string(synID) + " ";
+    string saveString = ">ns " + to_string(node->getID()) + " " + to_string(synapse->getID()) + " ";
 
     if (!loading) {
         saveActionToFile(saveString);
@@ -343,6 +371,10 @@ void Controller::getAllOutputs() {
                         break;
                     case Flags::ActionFlag::SET_FLAG_FOR_NODE:
                         actionNodeSetFlagForNodeFunction(actionNode);
+                    case Flags::ActionFlag::UPDATE_WEIGHT:
+                        actionNodeUpdateWeightFunction(actionNode);
+                    case Flags::ActionFlag::UPDATE_NODE_VALUE:
+                        actionNodeUpdateNodeValueFunction(actionNode);
                         break;
                 }
             }
@@ -503,6 +535,10 @@ void Controller::loadFromFile() {
                             // set flag
                             n = new Nodes::SetFlagNode(id, threshold);
                             break;
+                        case 5:
+                            // update weight
+                            n = new Nodes::UpdateWeightNode(id, threshold);
+                            break;
                         default:
                             // invalid input punished with do nothing action
                             n = new Nodes::ActionNode(id, threshold, 0);
@@ -534,6 +570,7 @@ void Controller::loadFromFile() {
                     syn = new Synapses::WeightedSynapse(id, weight);
 
                     synapses.addSynapse(syn);
+                    weightedSynapses.addSynapse(syn);
                     unusedSynapses.addSynapse(syn);
                     synapses.checkID(id);
                 } else if (infobit == ">sn") {
@@ -645,46 +682,65 @@ void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
     float id2 = abs(node->getID2());
     float id3 = abs(node->getID3());
 
+    bool uu1 = node->getUU1();
+    bool uu2 = node->getUU2();
+    bool uu3 = node->getUU3();
+
     switch (conType) {
         case 0:
         {
-            unsigned int nodeID = (unsigned int)(id1 * nodes.getCurrID()) % nodes.getCurrID();
-            unsigned int synID = (unsigned int)(id2 * synapses.getCurrID()) % synapses.getCurrID();
+            unsigned int nodeIDLimVal = uu1 ? unusedNodes.getNumItems() : nodes.getCurrID();
+            unsigned int synIDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();
 
-            addNodeToSynapse(nodeID, synID, false);
+            unsigned int nodeID = (unsigned int)(id1 * (float)nodeIDLimVal) % nodeIDLimVal;
+            unsigned int synID = (unsigned int)(id2 * (float)synIDLimVal) % synIDLimVal;
+
+            addNodeToSynapse(nodeID, uu1, synID, uu2, false);
             break;
         }
 
         case 1:
         {
-            unsigned int nodeID = (unsigned int)(id2 * nodes.getCurrID()) % nodes.getCurrID();
-            unsigned int synID = (unsigned int)(id1 * synapses.getCurrID()) % synapses.getCurrID();
+            unsigned int nodeIDLimVal = uu2 ? unusedNodes.getNumItems() : nodes.getCurrID();
+            unsigned int synIDLimVal = uu1 ? unusedSynapses.getNumItems() : synapses.getCurrID();
 
-            addSynapseToNode(synID, nodeID, false);
+            unsigned int nodeID = (unsigned int)(id2 * (float)nodeIDLimVal) % nodeIDLimVal;
+            unsigned int synID = (unsigned int)(id1 * (float)synIDLimVal) % synIDLimVal;
+
+            addSynapseToNode(synID, uu1, nodeID, uu2, false);
             break;
         }
         case 2:
         {
-            unsigned int nodeID = (unsigned int)(id1 * nodes.getCurrID()) % nodes.getCurrID();
-            unsigned int synID = (unsigned int)(id2 * synapses.getCurrID()) % synapses.getCurrID();
-            unsigned int node2ID = (unsigned int)(id3 * nodes.getCurrID()) % nodes.getCurrID();
+            unsigned int nodeIDLimVal = uu1 ? unusedNodes.getNumItems() : nodes.getCurrID();
+            unsigned int synIDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();
+            unsigned int node2IDLimVal = uu3 ? unusedNodes.getNumItems() : nodes.getCurrID();
+
+            unsigned int nodeID = (unsigned int)(id1 * (float)nodeIDLimVal) % nodeIDLimVal;
+            unsigned int synID = (unsigned int)(id2 * (float)synIDLimVal) % synIDLimVal;
+            unsigned int node2ID = (unsigned int)(id3 * (float)node2IDLimVal) % node2IDLimVal;
 
 
-            addNodeToSynapse(nodeID, synID, false);
-            addSynapseToNode(synID, node2ID, false);
+            addNodeToSynapse(nodeID, uu1, synID, uu2, false);
+            addSynapseToNode(synID, uu1, node2ID, uu3, false);
             break;
         }
 
         case 3:
         {
-            unsigned int synID = (unsigned int)(id1 * synapses.getCurrID()) % synapses.getCurrID();
-            unsigned int syn2ID = (unsigned int)(id2 * synapses.getCurrID()) % synapses.getCurrID();
+            unsigned int synIDLimVal = uu1 ? unusedSynapses.getNumItems() : synapses.getCurrID();
+            unsigned int syn2IDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();
+
+            unsigned int synID = (unsigned int)(id1 * (float)synIDLimVal) % synIDLimVal;
+            unsigned int syn2ID = (unsigned int)(id2 * (float)syn2IDLimVal) % syn2IDLimVal;
 
 
             auto* n = new Nodes::NotInputNode(0);
 
-            Synapses::Synapse* s1 = synapses.getSynapseByID(synID);
-            Synapses::Synapse* s2 = synapses.getSynapseByID(syn2ID);
+            Synapses::Synapse* s1 = uu1 ? unusedSynapses.getSynapseByCount(synID)
+                    : synapses.getSynapseByID(synID);
+            Synapses::Synapse* s2 = uu2 ? unusedSynapses.getSynapseByCount(syn2ID)
+                    : synapses.getSynapseByID(syn2ID);
 
             bool s1uu = s1->isUnused();
             bool s2uu = s2->isUnused();
@@ -724,13 +780,47 @@ void Controller::generateInitialController() {
     std::uniform_real_distribution<float> dist(-1, 1);
 
 
-    fitnessInput = new Nodes::Input(nodes.getNextID());
+    //// metric inputs ////
 
+    fitnessInput = new Nodes::Input(nodes.getNextID()); // 0
+    nodes.addNode(fitnessInput);
+    unusedNodesInput = new Nodes::Input(nodes.getNextID()); // 1
+    nodes.addNode(unusedNodesInput);
+    unusedSynsInput = new Nodes::Input(nodes.getNextID()); // 2
+    nodes.addNode(unusedSynsInput);
+    networkSizeInput = new Nodes::Input(nodes.getNextID()); // 3
+    nodes.addNode(networkSizeInput);
+    fitnessDeltaInput = new Nodes::Input(nodes.getNextID()); // 4
+    nodes.addNode(fitnessDeltaInput);
+    fitnessAvgInput = new Nodes::Input(nodes.getNextID()); // 5
+    nodes.addNode(fitnessAvgInput);
+    turnsSinceFitnessDecInput = new Nodes::Input(nodes.getNextID()); // 6
+    nodes.addNode(turnsSinceFitnessDecInput);
+    outputCalcTimeInput = new Nodes::Input(nodes.getNextID()); // 7
+    nodes.addNode(outputCalcTimeInput);
 
+    //// layer sizes and helpful numbers ////
 
-    //// base inputs ////
-    const int numRand = 3;
-    const int numFixed = 3;
+    int startID = 8;
+    // base inputs
+    const int baseInputs = 6; // split 50/50 between random and static
+    const int baseInputHiddenLayers = 2;
+    const int nodesPerInputHiddenLayer = 6;
+    const int firstInputHiddenLayerStartID = startID + baseInputs;
+    // main hidden layers
+    const int hiddenLayers = 2;
+    const int nodesPerHiddenLayer = 18;
+    const int firstHiddenLayerStartID = firstInputHiddenLayerStartID
+            + (nodesPerInputHiddenLayer * baseInputHiddenLayers);
+    // output params inputs split layer
+    const int nodesToOutputParams = 10;
+    const int nodesToOutputParamsStartID = firstInputHiddenLayerStartID
+            + (nodesPerHiddenLayer * hiddenLayers);
+    const int nodesToOutputFiringThreshold = 8;
+    const int nodesToOutFireThreshStartID = nodesToOutputParamsStartID + nodesToOutputParams;
+    // output params layer
+    const int totalOutputParams = 22;
+
 
     // rand
     for (int i = 0; i < numRand; i++) {
@@ -1142,6 +1232,27 @@ void Controller::setMetricInputs() {
     turnsSinceFitnessDecInput->setValue((float)fitDecTurns);
 
     outputCalcTimeInput->setValue((float)calcTime / 1000000.0f);
+}
+
+void Controller::actionNodeUpdateWeightFunction(Nodes::ActionNode *actionNode) {
+    auto node = dynamic_cast<Nodes::UpdateWeightNode*>(actionNode);
+
+    unsigned int targetID = (unsigned int)(node->getTargetID() * (float)weightedSynapses.getNumItems()) * weightedSynapses.getNumItems();
+    float weightVal = node->getWeightModifier();
+    bool replacing = node->replacingWeight();
+
+    auto target = (Synapses::WeightedSynapse*)weightedSynapses.getSynapseByCount(targetID);
+
+    float newWeight = replacing ? weightVal : target->getWeight() + weightVal;
+
+    target->setWeight(newWeight);
+}
+
+void Controller::actionNodeUpdateNodeValueFunction(Nodes::ActionNode *actionNode) {
+    auto node = dynamic_cast<Nodes::UpdateNodeValueNode*>(actionNode);
+
+    unsigned int targetID = (unsigned int)(node->getTargetID() * (float)valueInputs.getNumItems()) * valueInputs.getNumItems();
+
 }
 
 

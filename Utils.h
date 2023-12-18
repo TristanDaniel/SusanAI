@@ -16,7 +16,9 @@ namespace Flags {
         ADD_NODE,
         ADD_SYNAPSE,
         MAKE_CONNECTION,
-        SET_FLAG_FOR_NODE
+        SET_FLAG_FOR_NODE,
+        UPDATE_WEIGHT,
+        UPDATE_NODE_VALUE
     };
 
 }

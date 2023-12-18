@@ -24,7 +24,9 @@ namespace Synapses {
 		[[nodiscard]] unsigned int getID() const;
 
 		void setInput(Nodes::Node* n);
+        [[nodiscard]] Nodes::Node* getInput() const;
         void setOutput(Nodes::Node* n);
+        [[nodiscard]] Nodes::Node* getOutput() const;
 
         bool isUnused();
 
@@ -57,6 +59,9 @@ namespace Synapses {
 		explicit WeightedSynapse(unsigned int i);
         WeightedSynapse(unsigned int i, float w);
 		WeightedSynapse(unsigned int i, Nodes::Node* inNode, float w);
+
+        void setWeight(float w);
+        float getWeight() const;
 
 		float getData() override;
 

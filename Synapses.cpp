@@ -45,8 +45,15 @@ string WeightedSynapse::saveSynapse() {
 }
 
 bool Synapse::isUnused() {
-    return !(input && output);
+    return !(input && (output && !dynamic_cast<Nodes::Input*>(output)));
 }
+
+void WeightedSynapse::setWeight(float w) { weight = w; }
+float WeightedSynapse::getWeight() const { return weight; }
+
+Nodes::Node* Synapse::getOutput() const { return output; }
+Nodes::Node* Synapse::getInput() const { return input; }
+
 
 
 

@@ -233,11 +233,15 @@ namespace Nodes {
     protected:
         int connectionType = 0;
         float id1 = 0, id2 = 0, id3 = 0; // id3 only used for nn con (type 2)
+        bool uu1 = false, uu2 = false, uu3 = false;
 
         Synapses::Synapse* connectionTypeInput = nullptr,
                          * id1Input = nullptr,
+                         * uu1Input = nullptr,
                          * id2Input = nullptr,
-                         * id3Input = nullptr;
+                         * uu2Input = nullptr,
+                         * id3Input = nullptr,
+                         * uu3Input = nullptr;
 
     public:
         MakeConnectionNode(unsigned int i, float t) : ActionNode(i, t, 3) {}
@@ -250,12 +254,15 @@ namespace Nodes {
         float getID1() const;
         float getID2() const;
         float getID3() const;
+        bool getUU1() const;
+        bool getUU2() const;
+        bool getUU3() const;
     };
 
     class SetFlagNode : public ActionNode {
 
     protected:
-        int targetType = 0; // useless for now, once synapses exist this will be useful
+        int targetType = 0; // useless for now, once other flag types exist this will be useful
         float targetID = 0;
         int flagVal = 0;
 
@@ -272,6 +279,52 @@ namespace Nodes {
         float getTargetID() const;
         int getFlagVal() const;
     };
+
+    class UpdateWeightNode : public ActionNode {
+
+    protected:
+        float targetID = 0, weightModifier = 0;
+        bool replaceWeight = false;
+
+        Synapses::Synapse* targetIDInput = nullptr,
+                         * weightModifierInput = nullptr,
+                         * replaceWeightInput = nullptr;
+
+    public:
+        UpdateWeightNode(unsigned int i, float t) : ActionNode(i, t, 5) {}
+
+        void getOutput() override;
+
+        void addSynapse(Synapses::Synapse* syn) override;
+
+        float getTargetID() const;
+        float getWeightModifier() const;
+        bool replacingWeight() const;
+
+    };
+
+    class UpdateNodeValueNode : public ActionNode {
+
+    protected:
+        float targetID = 0, valueModifier = 0;
+        bool replaceValue = false;
+
+        Synapses::Synapse* targetIDInput = nullptr,
+                * valueModifierInput = nullptr,
+                * replaceValueInput = nullptr;
+
+    public:
+        UpdateNodeValueNode(unsigned int i, float t) : ActionNode(i, t, 6) {}
+
+        void getOutput() override;
+
+        void addSynapse(Synapses::Synapse* syn) override;
+
+        float getTargetID() const;
+        float getValueModifier() const;
+        bool replacingValue() const;
+    };
+
 
 
 }

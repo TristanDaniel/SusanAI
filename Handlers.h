@@ -39,6 +39,7 @@ namespace Handlers{
         void removeNodeByID(unsigned int id);
 
         Nodes::Node* getNodeByID(unsigned int id);
+        Nodes::Node* getNodeByCount(unsigned int idx);
 
         std::vector<Nodes::Node*> getNodes();
     };
@@ -60,5 +61,6 @@ namespace Handlers{
         void removeSynapseByID(unsigned int id);
 
         Synapses::Synapse* getSynapseByID(unsigned int id);
+        Synapses::Synapse* getSynapseByCount(unsigned int idx);
     };
 }

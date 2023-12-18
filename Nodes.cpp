@@ -380,8 +380,11 @@ void MakeConnectionNode::getOutput() {
     connectionType = connectionTypeInput ?
             (int)(connectionTypeInput->getData() * DataBits::NUM_CONN_TYPES) % DataBits::NUM_CONN_TYPES : 0;
     id1 = id1Input ? id1Input->getData() : 0;
+    uu1 = uu1Input != nullptr && uu1Input->getData() >= 0;
     id2 = id2Input ? id2Input->getData() : 0;
+    uu2 = uu2Input != nullptr && uu2Input->getData() >= 0;
     id3 = (connectionType == 2 && id3Input) ? id3Input->getData() : 0;
+    uu3 = uu3Input != nullptr && uu3Input->getData() >= 0;
 }
 
 void MakeConnectionNode::addSynapse(Synapses::Synapse *syn) {
@@ -393,12 +396,24 @@ void MakeConnectionNode::addSynapse(Synapses::Synapse *syn) {
         id1Input = syn;
         return;
     }
+    if (!uu1Input){
+        uu1Input = syn;
+        return;
+    }
     if (!id2Input) {
         id2Input = syn;
         return;
     }
+    if (!uu2Input){
+        uu2Input = syn;
+        return;
+    }
     if (!id3Input) {
         id3Input = syn;
+        return;
+    }
+    if (!uu3Input){
+        uu3Input = syn;
         return;
     }
 
@@ -409,6 +424,9 @@ int MakeConnectionNode::getConnectionType() const { return connectionType; }
 float MakeConnectionNode::getID1() const { return id1; }
 float MakeConnectionNode::getID2() const { return id2; }
 float MakeConnectionNode::getID3() const { return id3; }
+bool MakeConnectionNode::getUU1() const { return uu1; }
+bool MakeConnectionNode::getUU2() const { return uu2; }
+bool MakeConnectionNode::getUU3() const { return uu3; }
 
 void SetFlagNode::getOutput() {
     targetID = targetIDInput ? targetIDInput->getData() : 0;
@@ -440,9 +458,59 @@ void Node::removeOutputSynapse(Synapses::Synapse *syn) {
     outputs.erase(remove(outputs.begin(), outputs.end(), syn), outputs.end());
 }
 
+void UpdateWeightNode::getOutput() {
+    targetID = targetIDInput ? abs(targetIDInput->getData()) : 0;
+    weightModifier = weightModifierInput ? weightModifierInput->getData() : 1;
+    replaceWeight = replaceWeightInput != nullptr && (replaceWeightInput->getData() <= 0);
+}
 
+void UpdateWeightNode::addSynapse(Synapses::Synapse *syn) {
+    if (!targetIDInput) {
+        targetIDInput = syn;
+        return;
+    }
+    if (!weightModifierInput) {
+        weightModifierInput = syn;
+        return;
+    }
+    if (!replaceWeightInput) {
+        replaceWeightInput = syn;
+        return;
+    }
 
+    Node::addSynapse(syn);
+}
 
+float UpdateWeightNode::getTargetID() const { return targetID; }
+float UpdateWeightNode::getWeightModifier() const { return weightModifier; }
+bool UpdateWeightNode::replacingWeight() const { return replaceWeight; }
+
+void UpdateNodeValueNode::getOutput() {
+    targetID = targetIDInput ? abs(targetIDInput->getData()) : 0;
+    valueModifier = valueModifierInput ? valueModifierInput->getData() : 1;
+    replaceValue = replaceValueInput != nullptr && (replaceValueInput->getData() <= 0);
+}
+
+void UpdateNodeValueNode::addSynapse(Synapses::Synapse *syn) {
+    if (!targetIDInput) {
+        targetIDInput = syn;
+        return;
+    }
+    if (!valueModifierInput) {
+        valueModifierInput = syn;
+        return;
+    }
+    if (!replaceValueInput) {
+        replaceValueInput = syn;
+        return;
+    }
+
+    Node::addSynapse(syn);
+}
+
+float UpdateNodeValueNode::getTargetID() const { return targetID; }
+float UpdateNodeValueNode::getValueModifier() const { return valueModifier; }
+bool UpdateNodeValueNode::replacingValue() const { return replaceValue; }
 
 
 

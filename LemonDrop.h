@@ -14,9 +14,11 @@ namespace LemonDrop {
         Handlers::NodeHandler nodes;
         Handlers::NodeHandler outputs;
         Handlers::NodeHandler fireables;
+        Handlers::NodeHandler valueInputs;
         Handlers::NodeHandler unusedNodes;
 
         Handlers::SynapseHandler synapses;
+        Handlers::SynapseHandler weightedSynapses;
         Handlers::SynapseHandler unusedSynapses;
 
         Nodes::Input* unusedNodesInput = new Nodes::Input(0),
@@ -47,7 +49,9 @@ namespace LemonDrop {
 
 
         bool addSynapseToNode(unsigned int synID, unsigned int nodeID, bool loading);
+        bool addSynapseToNode(unsigned int synID, bool uuSyn, unsigned int nodeID, bool uuNode, bool loading);
         bool addNodeToSynapse(unsigned int nodeID, unsigned int synID, bool loading);
+        bool addNodeToSynapse(unsigned int nodeID, bool uuNode, unsigned int synID, bool uuSyn, bool loading);
 
 
         void getAllOutputs();
@@ -63,6 +67,8 @@ namespace LemonDrop {
         void actionNodeAddSynapseFunction(Nodes::ActionNode* actionNode);
         void actionNodeMakeConnectionFunction(Nodes::ActionNode* actionNode);
         void actionNodeSetFlagForNodeFunction(Nodes::ActionNode* actionNode);
+        void actionNodeUpdateWeightFunction(Nodes::ActionNode* actionNode);
+        void actionNodeUpdateNodeValueFunction(Nodes::ActionNode* actionNode);
 
 //        void actionNodeNodeToSynFunction(Nodes::MakeConnectionNode* node);
 //        void actionNodeSynToNodeFunction(Nodes::MakeConnectionNode* node);

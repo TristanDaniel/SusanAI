@@ -24,8 +24,10 @@ void NodeHandler::removeNodeByID(unsigned int id) {
 }
 
 Nodes::Node* NodeHandler::getNodeByID(unsigned int id) {
-    return *std::find_if(nodes.begin(), nodes.end(),
-                         [&id](Nodes::Node* node) { return node->getID() == id;});
+    auto node = std::find_if(nodes.begin(), nodes.end(),
+                              [&id](Nodes::Node* node) { return node->getID() == id;});
+
+    return node == nodes.end() ? getNodeByCount(id) : *node;
 }
 
 unsigned int Handler::getCurrID() const { return nextID; }
@@ -53,11 +55,29 @@ void SynapseHandler::removeSynapseByID(unsigned int id) {
 }
 
 Synapses::Synapse* SynapseHandler::getSynapseByID(unsigned int id) {
-    return *std::find_if(synapses.begin(), synapses.end(),
-                         [&id](Synapses::Synapse* synapse) { return synapse->getID() == id;});
+    auto syn = std::find_if(synapses.begin(), synapses.end(),
+                             [&id](Synapses::Synapse* synapse) { return synapse->getID() == id;});
+
+    return syn == synapses.end() ? getSynapseByCount(id) : *syn;
 }
 
 void Handler::checkID(unsigned int id) { if (id > nextID) nextID = id; }
 
 int Handler::getNumItems() const { return items; }
+
+Nodes::Node* NodeHandler::getNodeByCount(unsigned int idx) {
+    int i = 0;
+    for (auto n : nodes) {
+        if (i++ == idx) return n;
+    }
+}
+
+Synapses::Synapse* SynapseHandler::getSynapseByCount(unsigned int idx) {
+    int i = 0;
+    for (auto syn : synapses) {
+        if (i++ == idx) return syn;
+    }
+}
+
+
 
