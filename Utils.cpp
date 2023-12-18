@@ -19,6 +19,6 @@ float UtilFunctions::LDRandomFloat() {
 float UtilFunctions::LDRandomInt(int min, int max) {
     std::uniform_int_distribution<int> dist(min, max);
 
-    return dist(mt);
+    return (float)dist(mt);
 
 }

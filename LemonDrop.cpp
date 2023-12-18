@@ -81,6 +81,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
             n->setValue(params.basicNodeParams.value);
 
             nodes.addNode(n);
+            valueInputs.addNode(n);
             unusedNodes.addNode(n);
 
             saveActionToFile(n->saveNode());
@@ -622,6 +623,26 @@ void Controller::loadFromFile() {
 
                     n = nodes.getNodeByID(id);
                     n->addFlag((Flags::NodeFlag)flag);
+                } else if (infobit == "=iv") {
+                    // update static input value
+                    // -iv id val  -- id of target and resulting value to reduce need for replace check
+                    ss >> id;
+
+                    float val;
+                    ss >> val;
+
+                    n = nodes.getNodeByID(id);
+                    n->setValue(val);
+                } else if (infobit == "=sw") {
+                    // update synapse weight
+                    // same as =iv
+                    ss >> id;
+
+                    float val;
+                    ss >> val;
+
+                    syn = synapses.getSynapseByID(id);
+                    ((Synapses::WeightedSynapse*)syn)->setWeight(val);
                 } else if (infobit == "eff") {
                         return;
                 }
@@ -774,6 +795,7 @@ void Controller::actionNodeSetFlagForNodeFunction(Nodes::ActionNode *actionNode)
 
 
 void Controller::generateInitialController() {
+    using namespace UtilFunctions;
     //// setup ////
     std::random_device rd;
     std::mt19937 mt(rd());
@@ -819,7 +841,78 @@ void Controller::generateInitialController() {
     const int nodesToOutputFiringThreshold = 8;
     const int nodesToOutFireThreshStartID = nodesToOutputParamsStartID + nodesToOutputParams;
     // output params layer
-    const int totalOutputParams = 22;
+    const int totalOutputParams = 25;
+    const int outputParamNodesStartID = nodesToOutFireThreshStartID + nodesToOutputFiringThreshold;
+    const int firingThresholdNodes = 4;
+    const int firingThresholdNodesStartID = outputParamNodesStartID + totalOutputParams;
+    // outputs
+    const int actionOutputs = 7;
+    const int actionOutputsStartID = firingThresholdNodesStartID + firingThresholdNodes;
+    // extras to play with
+    const int extraOutputs = 5;
+    const int extraOutputsStartID = actionOutputsStartID + actionOutputs;
+
+    //// temp variables ////
+    Nodes::Node* n;
+    Synapses::Synapse* syn;
+
+    //// creation ////
+
+    // base inputs
+    for (int i = 0; i < baseInputs / 2; i++) {
+        // static input
+        n = new Nodes::Input(nodes.getNextID());
+        n->setValue(LDRandomInt(-5, 5) * LDRandomFloat());
+
+        saveActionToFile(n->saveNode());
+
+        nodes.addNode(n);
+        valueInputs.addNode(n);
+
+        // random input
+        n = new Nodes::RandomInput(nodes.getNextID(), 4, -1, 1);
+
+        saveActionToFile(n->saveNode());
+
+        nodes.addNode(n);
+    }
+
+    // base input hidden layers
+    for (int i = 0; i < nodesPerInputHiddenLayer; i++) {
+        n = new Nodes::NotInputNode(nodes.getNextID());
+
+        saveActionToFile(n->saveNode());
+
+        nodes.addNode(n);
+
+        for (int j = startID; j < startID + baseInputs; j++) {
+            syn = new Synapses::WeightedSynapse(synapses.getNextID(), LDRandomFloat());
+
+            saveActionToFile(syn->saveSynapse());
+
+            synapses.addSynapse(syn);
+            weightedSynapses.addSynapse(syn);
+
+            addNodeToSynapse(j, syn->getID(), false);
+            addSynapseToNode(syn->getID(), i + firstInputHiddenLayerStartID, false);
+        }
+    }
+
+    for (int i = 1; i < baseInputHiddenLayers; i++) {
+        int layerStartID = firstInputHiddenLayerStartID + (nodesPerInputHiddenLayer * i);
+        for (int newNodeID = layerStartID; newNodeID < layerStartID + nodesPerInputHiddenLayer; newNodeID++) {
+            n = new Nodes::NotInputNode(newNodeID);
+
+            saveActionToFile(n->saveNode());
+
+            nodes.addNode(n);
+
+            int prevLayerStartID =
+        }
+    }
+
+
+
 
 
     // rand
@@ -1238,21 +1331,34 @@ void Controller::actionNodeUpdateWeightFunction(Nodes::ActionNode *actionNode) {
     auto node = dynamic_cast<Nodes::UpdateWeightNode*>(actionNode);
 
     unsigned int targetID = (unsigned int)(node->getTargetID() * (float)weightedSynapses.getNumItems()) * weightedSynapses.getNumItems();
-    float weightVal = node->getWeightModifier();
+    float weightModifier = node->getWeightModifier();
     bool replacing = node->replacingWeight();
 
     auto target = (Synapses::WeightedSynapse*)weightedSynapses.getSynapseByCount(targetID);
 
-    float newWeight = replacing ? weightVal : target->getWeight() + weightVal;
+    float newWeight = replacing ? weightModifier : target->getWeight() + weightModifier;
 
     target->setWeight(newWeight);
+
+    string saveString = "=sw " + to_string(target->getID()) + " " + to_string(target->getWeight());
+    saveActionToFile(saveString);
 }
 
 void Controller::actionNodeUpdateNodeValueFunction(Nodes::ActionNode *actionNode) {
     auto node = dynamic_cast<Nodes::UpdateNodeValueNode*>(actionNode);
 
     unsigned int targetID = (unsigned int)(node->getTargetID() * (float)valueInputs.getNumItems()) * valueInputs.getNumItems();
+    float valueModifier = node->getValueModifier();
+    bool replacing = node->replacingValue();
 
+    Nodes::Node* target = valueInputs.getNodeByCount(targetID);
+
+    float newValue = replacing ? valueModifier : target->getValue() + valueModifier;
+
+    target->setValue(newValue);
+
+    string saveString = "=iv " + to_string(target->getID()) + " " + to_string(target->getValue());
+    saveActionToFile(saveString);
 }
 
 
