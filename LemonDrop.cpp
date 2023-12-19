@@ -25,6 +25,23 @@ Controller::Controller() {
     weightedSynapses.InitHandler();
     unusedSynapses.InitHandler();
 
+    fitnessInput = new Nodes::Input(nodes.getNextID()); // 0
+    nodes.addNode(fitnessInput);
+    unusedNodesInput = new Nodes::Input(nodes.getNextID()); // 1
+    nodes.addNode(unusedNodesInput);
+    unusedSynsInput = new Nodes::Input(nodes.getNextID()); // 2
+    nodes.addNode(unusedSynsInput);
+    networkSizeInput = new Nodes::Input(nodes.getNextID()); // 3
+    nodes.addNode(networkSizeInput);
+    fitnessDeltaInput = new Nodes::Input(nodes.getNextID()); // 4
+    nodes.addNode(fitnessDeltaInput);
+    fitnessAvgInput = new Nodes::Input(nodes.getNextID()); // 5
+    nodes.addNode(fitnessAvgInput);
+    turnsSinceFitnessDecInput = new Nodes::Input(nodes.getNextID()); // 6
+    nodes.addNode(turnsSinceFitnessDecInput);
+    outputCalcTimeInput = new Nodes::Input(nodes.getNextID()); // 7
+    nodes.addNode(outputCalcTimeInput);
+
     fitnessAvg = UtilClasses::RunningAverage<float>(fitAvgTurns);
     calcAvg = UtilClasses::RunningAverage<long long int>(calcAvgTurns);
 
@@ -34,8 +51,8 @@ Controller::Controller() {
     calcTime = 3000000;
     fitDecTurns = 1;
 
-//    std::ofstream saveFile("..\\controller.lsv");
-//    saveFile.close();
+    //std::ofstream saveFile("..\\controller.lsv");
+    //saveFile.close();
 
     initController();
 
@@ -44,6 +61,27 @@ Controller::Controller() {
     saveActionToFile("\n");
 
     mainLoop();
+}
+
+Controller::Controller(const std::string& contName, const bool generateNew) : Controller() {
+    name = contName;
+
+    if (generateNew) {
+        std::ofstream saveFile("..\\" + contName + ".lsv");
+        saveFile.close();
+
+        generateInitialController();
+    } else {
+        initController();
+    }
+
+    saveActionToFile("\n");
+}
+
+Controller::Controller(const std::string &contName, const std::string &fileToLoadFrom) : Controller() {
+    name = fileToLoadFrom;
+    initController();
+    name = contName;
 }
 
 bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
@@ -351,33 +389,18 @@ bool Controller::addNodeToSynapse(unsigned int nodeID, bool uuNode, unsigned int
 
 void Controller::getAllOutputs() {
     bool doNothing = false;
+    float highestFiringActionValue = 0;
+    Nodes::ActionNode* actionNode = nullptr;
     auto start = chrono::high_resolution_clock::now();
 
     for (Nodes::Node* output : outputs.getNodes()) {
-        if (auto* actionNode = dynamic_cast<Nodes::ActionNode *>(output)) {
-            if (!doNothing && actionNode->getValue() == 0) {
-                actionNode->getOutput();
-                switch (actionNode->getActionType()) {
-                    case Flags::ActionFlag::DO_NOTHING:
-                        doNothing = true; //prevents other action nodes from firing this turn
-                        break;
-                    case Flags::ActionFlag::ADD_NODE:
-                        actionNodeAddNodeFunction(actionNode);
-                        break;
-                    case Flags::ActionFlag::ADD_SYNAPSE:
-                        actionNodeAddSynapseFunction(actionNode);
-                        break;
-                    case Flags::ActionFlag::MAKE_CONNECTION:
-                        actionNodeMakeConnectionFunction(actionNode);
-                        break;
-                    case Flags::ActionFlag::SET_FLAG_FOR_NODE:
-                        actionNodeSetFlagForNodeFunction(actionNode);
-                    case Flags::ActionFlag::UPDATE_WEIGHT:
-                        actionNodeUpdateWeightFunction(actionNode);
-                    case Flags::ActionFlag::UPDATE_NODE_VALUE:
-                        actionNodeUpdateNodeValueFunction(actionNode);
-                        break;
-                }
+        if (auto* actionNode1 = dynamic_cast<Nodes::ActionNode *>(output)) {
+            float value = actionNode1->getValue();
+            if (value > highestFiringActionValue) {
+                actionNode1->getOutput();
+
+                highestFiringActionValue = value;
+                actionNode = actionNode1;
             }
         } else ((Nodes::Output *) output)->getOutput();
     }
@@ -386,7 +409,32 @@ void Controller::getAllOutputs() {
     auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
     calcTime = duration.count();
     calcAvg.addValue(calcTime);
-    cout << (calcAvg.getAverage() / 1000) << ", " << outputs.getNumItems() << endl;
+    cout << (calcAvg.getAverage() / 1000000) << " ms, " << outputs.getNumItems() << endl;
+
+    switch (actionNode->getActionType()) {
+        case Flags::ActionFlag::DO_NOTHING:
+            doNothing = true; //prevents other action nodes from firing this turn
+            cout << "Doing nothing" << endl;
+            break;
+        case Flags::ActionFlag::ADD_NODE:
+            actionNodeAddNodeFunction(actionNode);
+            break;
+        case Flags::ActionFlag::ADD_SYNAPSE:
+            actionNodeAddSynapseFunction(actionNode);
+            break;
+        case Flags::ActionFlag::MAKE_CONNECTION:
+            actionNodeMakeConnectionFunction(actionNode);
+            break;
+        case Flags::ActionFlag::SET_FLAG_FOR_NODE:
+            actionNodeSetFlagForNodeFunction(actionNode);
+            break;
+        case Flags::ActionFlag::UPDATE_WEIGHT:
+            actionNodeUpdateWeightFunction(actionNode);
+            break;
+        case Flags::ActionFlag::UPDATE_NODE_VALUE:
+            actionNodeUpdateNodeValueFunction(actionNode);
+            break;
+    }
 }
 
 [[noreturn]] void Controller::mainLoop() {
@@ -405,7 +453,7 @@ void Controller::getAllOutputs() {
 }
 
 void Controller::saveActionToFile(const std::string& s) {
-    std::ofstream saveFile("..\\controller.lsv", std::ios::app);
+    std::ofstream saveFile("..\\" + name + ".lsv", std::ios::app);
 
     if (saveFile.is_open()) {
         saveFile << s;
@@ -414,7 +462,7 @@ void Controller::saveActionToFile(const std::string& s) {
 }
 
 void Controller::loadFromFile() {
-    std::ifstream loadFile ("..\\controller.lsv");
+    std::ifstream loadFile ("..\\" + name + ".lsv");
 
     if (loadFile.is_open()) {
         string line;
@@ -797,9 +845,6 @@ void Controller::actionNodeSetFlagForNodeFunction(Nodes::ActionNode *actionNode)
 void Controller::generateInitialController() {
     using namespace UtilFunctions;
     //// setup ////
-    std::random_device rd;
-    std::mt19937 mt(rd());
-    std::uniform_real_distribution<float> dist(-1, 1);
 
 
     //// metric inputs ////
@@ -823,7 +868,7 @@ void Controller::generateInitialController() {
 
     //// layer sizes and helpful numbers ////
 
-    int startID = 8;
+    const int startID = 8;
     // base inputs
     const int baseInputs = 6; // split 50/50 between random and static
     const int baseInputHiddenLayers = 2;
@@ -858,7 +903,7 @@ void Controller::generateInitialController() {
 
     //// creation ////
 
-    // base inputs
+    // base inputs //
     for (int i = 0; i < baseInputs / 2; i++) {
         // static input
         n = new Nodes::Input(nodes.getNextID());
@@ -877,383 +922,130 @@ void Controller::generateInitialController() {
         nodes.addNode(n);
     }
 
-    // base input hidden layers
-    for (int i = 0; i < nodesPerInputHiddenLayer; i++) {
-        n = new Nodes::NotInputNode(nodes.getNextID());
+    saveActionToFile("\n");
 
-        saveActionToFile(n->saveNode());
-
-        nodes.addNode(n);
-
-        for (int j = startID; j < startID + baseInputs; j++) {
-            syn = new Synapses::WeightedSynapse(synapses.getNextID(), LDRandomFloat());
-
-            saveActionToFile(syn->saveSynapse());
-
-            synapses.addSynapse(syn);
-            weightedSynapses.addSynapse(syn);
-
-            addNodeToSynapse(j, syn->getID(), false);
-            addSynapseToNode(syn->getID(), i + firstInputHiddenLayerStartID, false);
-        }
-    }
-
-    for (int i = 1; i < baseInputHiddenLayers; i++) {
-        int layerStartID = firstInputHiddenLayerStartID + (nodesPerInputHiddenLayer * i);
-        for (int newNodeID = layerStartID; newNodeID < layerStartID + nodesPerInputHiddenLayer; newNodeID++) {
-            n = new Nodes::NotInputNode(newNodeID);
-
-            saveActionToFile(n->saveNode());
-
-            nodes.addNode(n);
-
-            int prevLayerStartID =
-        }
-    }
-
-
-
-
-
-    // rand
-    for (int i = 0; i < numRand; i++) {
-        Nodes::Node* n = new Nodes::RandomInput(nodes.getNextID(), 4, -1, 1);
-
-        saveActionToFile(n->saveNode());
-
-        nodes.addNode(n); //0, 1, 2
-    }
-
-    // fixed
-    Nodes::Node* fixedN1 = new Nodes::Input(nodes.getNextID());
-    fixedN1->setValue(5 * dist(mt));
-    saveActionToFile(fixedN1->saveNode());
-    nodes.addNode(fixedN1); // 3
-    Nodes::Node* fixedN2 = new Nodes::Input(nodes.getNextID());
-    fixedN2->setValue(dist(mt));
-    saveActionToFile(fixedN2->saveNode());
-    nodes.addNode(fixedN2); // 4
-    Nodes::Node* fixedN3 = new Nodes::Input(nodes.getNextID());
-    fixedN3->setValue(dist(mt));
-    saveActionToFile(fixedN3->saveNode());
-    nodes.addNode(fixedN3); // 5
+    // base input hidden layers //
+    makeStandardLayer(firstInputHiddenLayerStartID, nodesPerInputHiddenLayer);
+    saveActionToFile("\n");
+    connectTwoLayers(startID, baseInputs, firstInputHiddenLayerStartID, nodesPerInputHiddenLayer);
+    saveActionToFile("\n");
+    createAndConnectUniformRepeatedLayers(firstInputHiddenLayerStartID, nodesPerInputHiddenLayer, baseInputHiddenLayers);
 
     saveActionToFile("\n");
 
-    //// 2 layers of 6 ////
-    // 1st 6 layer
-    for (int i = 0; i < 6; i++) {
-        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
-
-        saveActionToFile(n->saveNode());
-
-        nodes.addNode(n); // 6-11
-    }
-
-    // connect base inputs to first layer of 6
-    for (int i = 6; i < 12; i++) {
-        for (int j = 0; j < 6; j++) {
-            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-            saveActionToFile(syn->saveSynapse());
-
-            synapses.addSynapse(syn);
-
-            addNodeToSynapse(j, syn->getID(), false);
-            addSynapseToNode(syn->getID(), i, false);
-        }
-    }
+    // hidden layers and connect inputs //
+    makeStandardLayer(firstHiddenLayerStartID, nodesPerHiddenLayer);
+    saveActionToFile("\n");
+    connectTwoLayers(0, startID, firstHiddenLayerStartID, nodesPerHiddenLayer);
+    connectTwoLayers(firstHiddenLayerStartID - nodesPerInputHiddenLayer, nodesPerInputHiddenLayer, firstHiddenLayerStartID, nodesPerHiddenLayer);
+    saveActionToFile("\n");
+    createAndConnectUniformRepeatedLayers(firstHiddenLayerStartID, nodesPerHiddenLayer, hiddenLayers);
 
     saveActionToFile("\n");
 
-    // 2nd 6 layer
-    for (int i = 0; i < 6; i++) {
-        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+    // split layer for output params and firing threshold //
+    makeStandardLayer(nodesToOutputParamsStartID, nodesToOutputParams);
+    saveActionToFile("\n");
+    makeStandardLayer(nodesToOutFireThreshStartID, nodesToOutputFiringThreshold);
+    saveActionToFile("\n");
 
-        saveActionToFile(n->saveNode());
-
-        nodes.addNode(n); // 12-17
-    }
-
-    // 1st 6 layer to 2nd 6 layer
-    for (int i = 12; i < 17; i++) {
-        for (int j = 6; j < 12; j++) {
-            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-            saveActionToFile(syn->saveSynapse());
-
-            synapses.addSynapse(syn);
-
-            addNodeToSynapse(j, syn->getID(), false);
-            addSynapseToNode(syn->getID(), i, false);
-        }
-    }
+    const int finalHiddenLayerStartID = nodesToOutputParamsStartID - nodesPerHiddenLayer;
+    connectTwoLayers(finalHiddenLayerStartID, nodesPerHiddenLayer, nodesToOutputParamsStartID, nodesToOutputParams);
+    connectTwoLayers(finalHiddenLayerStartID, nodesPerHiddenLayer, nodesToOutFireThreshStartID, nodesToOutputFiringThreshold);
 
     saveActionToFile("\n");
 
-    //// 2 layers of 16 ////
-    // 1st 16 layer
-    for (int i = 0; i < 16; i++) {
-        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
+    // outputs params and firing threshold //
+    makeStandardLayer(outputParamNodesStartID, totalOutputParams);
+    saveActionToFile("\n");
+    connectTwoLayers(nodesToOutputParamsStartID, nodesToOutputParams, outputParamNodesStartID, totalOutputParams);
+    saveActionToFile("\n");
 
-        saveActionToFile(n->saveNode());
-
-        nodes.addNode(n); // 18-33
-    }
-
-    // 2nd 6 layer to 1st 16 layer
-    for (int i = 18; i < 34; i++) {
-        for (int j = 12; j < 18; j++) {
-            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-            saveActionToFile(syn->saveSynapse());
-
-            synapses.addSynapse(syn);
-
-            addNodeToSynapse(j, syn->getID(), false);
-            addSynapseToNode(syn->getID(), i, false);
-        }
-    }
+    makeStandardLayer(firingThresholdNodesStartID, firingThresholdNodes);
+    saveActionToFile("\n");
+    connectTwoLayers(nodesToOutFireThreshStartID, nodesToOutputFiringThreshold, firingThresholdNodesStartID, firingThresholdNodes);
 
     saveActionToFile("\n");
 
-    // 2nd 16 layer
-    for (int i = 0; i < 16; i++) {
-        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
-
-        saveActionToFile(n->saveNode());
-
-        nodes.addNode(n); // 34-49
-    }
-
-    // 1st 16 layer to 2nd 16 layer
-    for (int i = 34; i < 50; i++) {
-        for (int j = 18; j < 34; j++) {
-            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-            saveActionToFile(syn->saveSynapse());
-
-            synapses.addSynapse(syn);
-
-            addNodeToSynapse(j, syn->getID(), false);
-            addSynapseToNode(syn->getID(), i, false);
-        }
-    }
-
-    saveActionToFile("\n");
-
-    //// 10 and 8 ////
-    // 10
-    for (int i = 0; i < 10; i++) {
-        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
-
-        saveActionToFile(n->saveNode());
-
-        nodes.addNode(n); // 50-59
-    }
-
-    // 8
-    for (int i = 0; i < 8; i++) {
-        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
-
-        saveActionToFile(n->saveNode());
-
-        nodes.addNode(n); // 60-67
-    }
-
-    saveActionToFile("\n");
-
-    // 2nd 16 to 10
-    for (int i = 50; i < 60; i++) {
-        for (int j = 34; j < 50; j++) {
-            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-            saveActionToFile(syn->saveSynapse());
-
-            synapses.addSynapse(syn);
-
-            addNodeToSynapse(j, syn->getID(), false);
-            addSynapseToNode(syn->getID(), i, false);
-        }
-    }
-
-    // 2nd 16 to 8
-    for (int i = 60; i < 68; i++) {
-        for (int j = 34; j < 50; j++) {
-            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-            saveActionToFile(syn->saveSynapse());
-
-            synapses.addSynapse(syn);
-
-            addNodeToSynapse(j, syn->getID(), false);
-            addSynapseToNode(syn->getID(), i, false);
-        }
-    }
-
-    saveActionToFile("\n");
-
-    //// param inputs and output value inputs ////
-    // 14 param inputs
-    for (int i = 0; i < 14; i++) {
-        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
-
-        saveActionToFile(n->saveNode());
-
-        nodes.addNode(n); // 68-81
-    }
-
-    // 4 output value inputs
-    for (int i = 0; i < 4; i++) {
-        Nodes::Node* n = new Nodes::NotInputNode(nodes.getNextID());
-
-        saveActionToFile(n->saveNode());
-
-        nodes.addNode(n); // 82-85
-    }
-
-    saveActionToFile("\n");
-
-    // 10 to params
-    for (int i = 68; i < 82; i++) {
-        for (int j = 50; j < 60; j++) {
-            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-            saveActionToFile(syn->saveSynapse());
-
-            synapses.addSynapse(syn);
-
-            addNodeToSynapse(j, syn->getID(), false);
-            addSynapseToNode(syn->getID(), i, false);
-        }
-    }
-
-    // 8 to value
-    for (int i = 82; i < 86; i++) {
-        for (int j = 60; j < 68; j++) {
-            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-            saveActionToFile(syn->saveSynapse());
-
-            synapses.addSynapse(syn);
-
-            addNodeToSynapse(j, syn->getID(), false);
-            addSynapseToNode(syn->getID(), i, false);
-        }
-    }
-
-    saveActionToFile("\n");
-
-    //// outputs ////
-    // 5 outputs, 86-90
-    Nodes::Node* doNothingOutput = new Nodes::ActionNode(nodes.getNextID(), 0.5, 0);
+    // outputs //
+    Nodes::Node* doNothingOutput = new Nodes::ActionNode(nodes.getNextID(), LDRandomFloat(), 0);
     saveActionToFile(doNothingOutput->saveNode());
     nodes.addNode(doNothingOutput);
     outputs.addNode(doNothingOutput);
-    Nodes::Node* addNodeOutput = new Nodes::AddNodeNode(nodes.getNextID(), 0.5);
+    Nodes::Node* addNodeOutput = new Nodes::AddNodeNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(addNodeOutput->saveNode());
     nodes.addNode(addNodeOutput);
     outputs.addNode(addNodeOutput);
-    Nodes::Node* addSynOutput = new Nodes::AddSynapseNode(nodes.getNextID(), 0.5);
+    Nodes::Node* addSynOutput = new Nodes::AddSynapseNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(addSynOutput->saveNode());
     nodes.addNode(addSynOutput);
     outputs.addNode(addSynOutput);
-    Nodes::Node* makeConOutput = new Nodes::MakeConnectionNode(nodes.getNextID(), 0.5);
+    Nodes::Node* makeConOutput = new Nodes::MakeConnectionNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(makeConOutput->saveNode());
     nodes.addNode(makeConOutput);
     outputs.addNode(makeConOutput);
-    Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), 0.5);
+    Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(setFlagOutput->saveNode());
     nodes.addNode(setFlagOutput);
     outputs.addNode(setFlagOutput);
+    Nodes::Node* updateWeightOutput = new Nodes::UpdateWeightNode(nodes.getNextID(), LDRandomFloat());
+    saveActionToFile(updateWeightOutput->saveNode());
+    nodes.addNode(updateWeightOutput);
+    outputs.addNode(updateWeightOutput);
+    Nodes::Node* updateNodeValueOutput = new Nodes::UpdateNodeValueNode(nodes.getNextID(), LDRandomFloat());
+    saveActionToFile(updateNodeValueOutput->saveNode());
+    nodes.addNode(updateNodeValueOutput);
+    outputs.addNode(updateNodeValueOutput);
+
 
     saveActionToFile("\n");
 
-    // params to outputs
-
-    // no action - 86 - no inputs
-
-    // add node - 87 - 6 inputs
-    for (int i = 0; i < 6; i++) {
-        Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-        saveActionToFile(syn->saveSynapse());
-
-        synapses.addSynapse(syn);
-
-        addNodeToSynapse(68+i, syn->getID(), false);
-        addSynapseToNode(syn->getID(), 87, false);
-    }
-
-    // add syn - 88 - 2 inputs
-    for (int i = 0; i < 2; i++) {
-        Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-        saveActionToFile(syn->saveSynapse());
-
-        synapses.addSynapse(syn);
-
-        addNodeToSynapse(74+i, syn->getID(), false);
-        addSynapseToNode(syn->getID(), 88, false);
-    }
-
-    // make con - 89 - 4 inputs
-    for (int i = 0; i < 4; i++) {
-        Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-        saveActionToFile(syn->saveSynapse());
-
-        synapses.addSynapse(syn);
-
-        addNodeToSynapse(76+i, syn->getID(), false);
-        addSynapseToNode(syn->getID(), 89, false);
-    }
-
-    // set flag - 90 - 2 inputs
-    for (int i = 0; i < 2; i++) {
-        Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-        saveActionToFile(syn->saveSynapse());
-
-        synapses.addSynapse(syn);
-
-        addNodeToSynapse(78+i, syn->getID(), false);
-        addSynapseToNode(syn->getID(), 90, false);
-    }
-
-    // 4 val to outputs
-    for (int i = 86; i < 91; i++) {
-        for (int j = 82; j < 86; j++) {
-            Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-            saveActionToFile(syn->saveSynapse());
-
-            synapses.addSynapse(syn);
-
-            addNodeToSynapse(j, syn->getID(), false);
-            addSynapseToNode(syn->getID(), i, false);
-        }
-    }
+    // connect outputs to params and threshold nodes //
+    // params
+    int currParamStartID = outputParamNodesStartID;
+    int outputID = actionOutputsStartID + 1;  // doNothing action takes no parameters
+    // add node
+    connectTwoLayers(currParamStartID, 8, outputID, 1);
+    currParamStartID += 8;
+    outputID++;
+    // add synapse
+    connectTwoLayers(currParamStartID, 2, outputID, 1);
+    currParamStartID += 2;
+    outputID++;
+    // make connection
+    connectTwoLayers(currParamStartID, 7, outputID, 1);
+    currParamStartID += 7;
+    outputID++;
+    // set flag
+    connectTwoLayers(currParamStartID, 2, outputID, 1);
+    currParamStartID += 2;
+    outputID++;
+    // update weight
+    connectTwoLayers(currParamStartID, 3, outputID, 1);
+    currParamStartID += 3;
+    outputID++;
+    // update node value
+    connectTwoLayers(currParamStartID, 3, outputID, 1);
+    currParamStartID += 3;
+    outputID++;
 
     saveActionToFile("\n");
 
-    //// extra outputs and syns to play with ////
-    for (int i = 0; i < 5; i++) {
-        Nodes::Node* n = new Nodes::Output(nodes.getNextID());
+    // threshold
+    connectTwoLayers(firingThresholdNodesStartID, firingThresholdNodes, actionOutputsStartID, actionOutputs);
+
+    saveActionToFile("\n");
+
+    // extra outputs to play with //
+    for (int i = extraOutputsStartID; i < extraOutputsStartID + extraOutputs; i++) {
+        n = new Nodes::Output(i);
 
         saveActionToFile(n->saveNode());
 
         nodes.addNode(n);
         outputs.addNode(n);
-
-        Synapses::Synapse* syn = new Synapses::WeightedSynapse(synapses.getNextID(), dist(mt));
-
-        saveActionToFile(syn->saveSynapse());
-
-        synapses.addSynapse(syn);
+        unusedNodes.addNode(n);
     }
-
-    saveActionToFile("\n");
 }
 
 float Controller::getUnusedPartFitnessImpact() {
@@ -1267,7 +1059,7 @@ float Controller::getUnusedPartFitnessImpact() {
                         + ((pow(scaledUURatio, uunodes) / totalNetSize)
                             + (pow(scaledUURatio, uusyns) / totalNetSize));
 
-    cout << min(max(0.0f, impactValue), 100.0f) << endl;
+    cout << "UU impact: " << min(max(0.0f, impactValue), 100.0f) << endl;
 
     return min(max(0.0f, impactValue), 100.0f);
 }
@@ -1286,7 +1078,7 @@ float Controller::getCalcTimeFitnessImpact() {
     // to get a basic percentage and then a multiplyer. lower avg and bigger improvement is good
     float impactValue = (100 * avgToCurrCalcRatio + largeAvgCalcTimePunishment) / 100;
 
-    cout << impactValue << endl;
+    cout << "CT impact: " << impactValue << endl;
 
     return impactValue;
 }
@@ -1297,7 +1089,7 @@ float Controller::getFitnessFitnessImpact() {
 
     float impactValue = decTurnsScaled * fitnessCurrToAvgRatio;
 
-    cout << impactValue << endl;
+    cout << "FF impact: " << impactValue << endl;
 
     return impactValue;
 }
@@ -1359,6 +1151,45 @@ void Controller::actionNodeUpdateNodeValueFunction(Nodes::ActionNode *actionNode
 
     string saveString = "=iv " + to_string(target->getID()) + " " + to_string(target->getValue());
     saveActionToFile(saveString);
+}
+
+void Controller::makeStandardLayer(const int layerStartID, const int nodesInLayer) {
+    Nodes::Node* node;
+
+    for (int nodeID = layerStartID; nodeID < layerStartID + nodesInLayer; nodeID++) {
+        node = new Nodes::NotInputNode(nodeID);
+
+        saveActionToFile(node->saveNode());
+
+        nodes.addNode(node);
+    }
+}
+
+void Controller::connectTwoLayers(const int prevLayerStartID, const int nodesInPrevLayer, const int nextLayerStartID, const int nodesInNextLayer) {
+    Synapses::WeightedSynapse* syn;
+
+    for (int nextLayerNodeID = nextLayerStartID; nextLayerNodeID < nextLayerStartID + nodesInNextLayer; nextLayerNodeID++) {
+        for (int prevLayerNodeID = prevLayerStartID; prevLayerNodeID < prevLayerStartID + nodesInPrevLayer; prevLayerNodeID++) {
+            syn = new Synapses::WeightedSynapse(synapses.getNextID(), UtilFunctions::LDRandomFloat());
+
+            saveActionToFile(syn->saveSynapse());
+
+            synapses.addSynapse(syn);
+            weightedSynapses.addSynapse(syn);
+
+            addNodeToSynapse(prevLayerNodeID, syn->getID(), false);
+            addSynapseToNode(syn->getID(), nextLayerNodeID, false);
+        }
+    }
+}
+
+void Controller::createAndConnectUniformRepeatedLayers(const int firstLayerStartID, const int nodesPerLayer, const int layers) {
+    // assumes first layer is already made
+    for (int i = 1; i < layers; i++) {
+        const int layerStartID = firstLayerStartID + (nodesPerLayer * i);
+        makeStandardLayer(layerStartID, nodesPerLayer);
+        connectTwoLayers(layerStartID - nodesPerLayer, nodesPerLayer, layerStartID, nodesPerLayer);
+    }
 }
 
 

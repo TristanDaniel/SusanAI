@@ -14,6 +14,7 @@ void NodeHandler::InitHandler() {
 
 void NodeHandler::addNode(Nodes::Node* n) {
     nodes.push_back(n);
+    checkID(n->getID());
     items++;
 }
 
@@ -45,6 +46,7 @@ void SynapseHandler::InitHandler() {
 
 void SynapseHandler::addSynapse(Synapses::Synapse *s) {
     synapses.push_back(s);
+    checkID(s->getID());
     items++;
 }
 
@@ -70,6 +72,8 @@ Nodes::Node* NodeHandler::getNodeByCount(unsigned int idx) {
     for (auto n : nodes) {
         if (i++ == idx) return n;
     }
+
+    return nullptr;
 }
 
 Synapses::Synapse* SynapseHandler::getSynapseByCount(unsigned int idx) {
@@ -77,6 +81,8 @@ Synapses::Synapse* SynapseHandler::getSynapseByCount(unsigned int idx) {
     for (auto syn : synapses) {
         if (i++ == idx) return syn;
     }
+
+    return nullptr;
 }
 
 

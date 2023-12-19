@@ -11,6 +11,8 @@ namespace LemonDrop {
 
     protected:
 
+        std::string name;
+
         Handlers::NodeHandler nodes;
         Handlers::NodeHandler outputs;
         Handlers::NodeHandler fireables;
@@ -21,14 +23,14 @@ namespace LemonDrop {
         Handlers::SynapseHandler weightedSynapses;
         Handlers::SynapseHandler unusedSynapses;
 
-        Nodes::Input* unusedNodesInput = new Nodes::Input(0),
-                    * unusedSynsInput = new Nodes::Input(0),
-                    * networkSizeInput = new Nodes::Input(0),
-                    * fitnessInput = new Nodes::Input(0),
-                    * fitnessDeltaInput = new Nodes::Input(0),
-                    * fitnessAvgInput = new Nodes::Input(0),
-                    * turnsSinceFitnessDecInput = new Nodes::Input(0),
-                    * outputCalcTimeInput = new Nodes::Input(0);
+        Nodes::Input* unusedNodesInput,
+                    * unusedSynsInput,
+                    * networkSizeInput,
+                    * fitnessInput,
+                    * fitnessDeltaInput,
+                    * fitnessAvgInput,
+                    * turnsSinceFitnessDecInput,
+                    * outputCalcTimeInput;
 
         int loopwait = 1000;
 
@@ -58,7 +60,7 @@ namespace LemonDrop {
 
         [[noreturn]] void mainLoop();
 
-        static void saveActionToFile(const std::string& s);
+        void saveActionToFile(const std::string& s);
         void loadFromFile();
 
         void initController();
@@ -85,9 +87,15 @@ namespace LemonDrop {
 
         void setMetricInputs();
 
+        void makeStandardLayer(int layerStartID, int nodesInLayer);
+        void connectTwoLayers(int prevLayerStartID, int nodesInPrevLayer, int nextLayerStartID, int nodesInNextLayer);
+        void createAndConnectUniformRepeatedLayers(int firstLayerStartID, int nodesPerLayer, int layers);
+
 
     public:
         Controller();
+        Controller(const std::string& contName, bool generateNew);
+        Controller(const std::string& contName, const std::string& fileToLoadFrom);
     };
 
 }
