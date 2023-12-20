@@ -43,6 +43,9 @@ namespace LemonDrop {
         int calcAvgTurns = 10;
         UtilClasses::RunningAverage<long long int> calcAvg;
         int lastActionType;
+         int actionTypeAvgTurns = 10;
+        UtilClasses::RunningAverage<int> actionTypeAvg;
+        int turnsSinceStructureChange;
 
 
 
@@ -103,7 +106,7 @@ namespace LemonDrop {
 
         [[nodiscard]] float getFitness();
 
-        std::string getName() const;
+        [[nodiscard]] std::string getName() const;
     };
 
 }

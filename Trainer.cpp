@@ -2,6 +2,7 @@
 #include <string>
 #include <thread>
 #include <iostream>
+#include <stdio.h>
 
 #include "Trainer.h"
 
@@ -36,15 +37,23 @@ void ControllerTrainer::train() {
 
             string  bestControllerName = bestController.getName();
             LemonDrop::Controller best("best_g" + to_string(i), bestControllerName);
+            bestControllerName = "best_g" + to_string(i);
             for (int j = 0; j < genSize - newAgentsPerGen; ++j) {
                 string  name = baseName + "_g" + to_string(i) + "_a" + to_string(j);
 
+                const string contName("..\\" + controllers[j].getName() + ".lsv");
+                const char * oldFile = contName.c_str();
+                remove(oldFile);
                 controllers[j] = LemonDrop::Controller(name, bestControllerName);
+
             }
 
             for (int j = genSize - newAgentsPerGen; j < genSize; ++j) {
                 string  name = baseName + "_g" + to_string(i) + "_a" + to_string(j);
 
+                const string contName("..\\" + controllers[j].getName() + ".lsv");
+                const char * oldFile = contName.c_str();
+                remove(oldFile);
                 controllers[j] = LemonDrop::Controller(name, true);
             }
         }
