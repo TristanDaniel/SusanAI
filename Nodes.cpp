@@ -319,7 +319,7 @@ int AddSynapseNode::getSynType() const { return synType; }
 ParamPackages::SynapseParams AddSynapseNode::getParams() {
     ParamPackages::SynapseParams params;
 
-    params.weightedSynapseParams.weight = weight;
+    params.weightedSynapseParams.weight = 2 * UtilFunctions::sigmoid(weight) - 1;
 
     return params;
 }
@@ -460,7 +460,8 @@ void Node::removeOutputSynapse(Synapses::Synapse *syn) {
 
 void UpdateWeightNode::getOutput() {
     targetID = targetIDInput ? abs(targetIDInput->getData()) : 0;
-    weightModifier = weightModifierInput ? weightModifierInput->getData() : 1;
+    float unclamppedWeightModifier = weightModifierInput ? weightModifierInput->getData() : 1;
+    weightModifier = 2 * UtilFunctions::sigmoid(unclamppedWeightModifier) - 1;
     replaceWeight = replaceWeightInput != nullptr && (replaceWeightInput->getData() <= 0);
 }
 
@@ -487,7 +488,8 @@ bool UpdateWeightNode::replacingWeight() const { return replaceWeight; }
 
 void UpdateNodeValueNode::getOutput() {
     targetID = targetIDInput ? abs(targetIDInput->getData()) : 0;
-    valueModifier = valueModifierInput ? valueModifierInput->getData() : 1;
+    float unclamppedValueModifier = valueModifierInput ? valueModifierInput->getData() : 1;
+    valueModifier = 2 * UtilFunctions::sigmoid(unclamppedValueModifier) - 1;
     replaceValue = replaceValueInput != nullptr && (replaceValueInput->getData() <= 0);
 }
 

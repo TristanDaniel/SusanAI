@@ -2,6 +2,7 @@
 //
 
 #include "SusanAI.h"
+#include "Trainer.h"
 
 using namespace std;
 using namespace Nodes;
@@ -10,7 +11,7 @@ using LemonDrop::Controller;
 
 int main()
 {
-    Controller ld = Controller();
+    ControllerTrainer::train();
 
 	cout << "Done" << endl;
 	return 0;

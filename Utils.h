@@ -83,6 +83,8 @@ namespace UtilFunctions {
     float LDRandomFloat();
 
     float LDRandomInt(int min, int max);
+
+    float sigmoid(float val);
 }
 
 namespace UtilClasses {

@@ -22,3 +22,7 @@ float UtilFunctions::LDRandomInt(int min, int max) {
     return (float)dist(mt);
 
 }
+
+float UtilFunctions::sigmoid(float val) {
+    return 1 / (1 + std::exp(-val));
+}

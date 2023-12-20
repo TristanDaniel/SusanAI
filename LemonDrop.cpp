@@ -6,6 +6,7 @@
 #include <thread>
 #include <random>
 #include <cmath>
+#include <filesystem>
 
 #include "LemonDrop.h"
 #include "Utils.h"
@@ -41,6 +42,8 @@ Controller::Controller() {
     nodes.addNode(turnsSinceFitnessDecInput);
     outputCalcTimeInput = new Nodes::Input(nodes.getNextID()); // 7
     nodes.addNode(outputCalcTimeInput);
+    lastActionTypeInput = new Nodes::Input(nodes.getNextID()); // 7
+    nodes.addNode(lastActionTypeInput);
 
     fitnessAvg = UtilClasses::RunningAverage<float>(fitAvgTurns);
     calcAvg = UtilClasses::RunningAverage<long long int>(calcAvgTurns);
@@ -50,17 +53,6 @@ Controller::Controller() {
     fitnessDelta = 0;
     calcTime = 3000000;
     fitDecTurns = 1;
-
-    //std::ofstream saveFile("..\\controller.lsv");
-    //saveFile.close();
-
-    initController();
-
-    //generateInitialController();
-
-    saveActionToFile("\n");
-
-    mainLoop();
 }
 
 Controller::Controller(const std::string& contName, const bool generateNew) : Controller() {
@@ -81,8 +73,13 @@ Controller::Controller(const std::string& contName, const bool generateNew) : Co
 Controller::Controller(const std::string &contName, const std::string &fileToLoadFrom) : Controller() {
     name = fileToLoadFrom;
     initController();
+    filesystem::copy("..\\" + fileToLoadFrom + ".lsv", "..\\" + contName + ".lsv");
     name = contName;
+
+    saveActionToFile("\n");
 }
+
+void Controller::operator()(int turnLimit) { mainLoop(turnLimit); }
 
 bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
@@ -204,7 +201,9 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
             switch (actionType) {
                 case 0:
                     // do nothing
-                    n = new Nodes::ActionNode(id, threshold, 0);
+                    n = new Nodes::AddNodeNode(id, threshold);
+
+                    //n = new Nodes::ActionNode(id, threshold, 0);
                     break;
                 case 1:
                     // add node
@@ -350,7 +349,7 @@ bool Controller::addSynapseToNode(unsigned int synID, bool uuSyn, unsigned int n
 
     if (!loading) {
         saveActionToFile(saveString);
-        cout << saveString << endl;
+        //cout << saveString << endl;
     }
 
     return true;
@@ -381,14 +380,13 @@ bool Controller::addNodeToSynapse(unsigned int nodeID, bool uuNode, unsigned int
 
     if (!loading) {
         saveActionToFile(saveString);
-        cout << saveString << endl;
+        //cout << saveString << endl;
     }
 
     return true;
 }
 
 void Controller::getAllOutputs() {
-    bool doNothing = false;
     float highestFiringActionValue = 0;
     Nodes::ActionNode* actionNode = nullptr;
     auto start = chrono::high_resolution_clock::now();
@@ -409,29 +407,36 @@ void Controller::getAllOutputs() {
     auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
     calcTime = duration.count();
     calcAvg.addValue(calcTime);
-    cout << (calcAvg.getAverage() / 1000000) << " ms, " << outputs.getNumItems() << endl;
+    //cout << (calcAvg.getAverage() / 1000000) << " ms, " << outputs.getNumItems() << endl;
 
+    if (highestFiringActionValue == 0) return;
     switch (actionNode->getActionType()) {
         case Flags::ActionFlag::DO_NOTHING:
-            doNothing = true; //prevents other action nodes from firing this turn
+            lastActionType = 0;
             cout << "Doing nothing" << endl;
             break;
         case Flags::ActionFlag::ADD_NODE:
+            lastActionType = 1;
             actionNodeAddNodeFunction(actionNode);
             break;
         case Flags::ActionFlag::ADD_SYNAPSE:
+            lastActionType = 2;
             actionNodeAddSynapseFunction(actionNode);
             break;
         case Flags::ActionFlag::MAKE_CONNECTION:
+            lastActionType = 3;
             actionNodeMakeConnectionFunction(actionNode);
             break;
         case Flags::ActionFlag::SET_FLAG_FOR_NODE:
+            lastActionType = 4;
             actionNodeSetFlagForNodeFunction(actionNode);
             break;
         case Flags::ActionFlag::UPDATE_WEIGHT:
+            lastActionType = 5;
             actionNodeUpdateWeightFunction(actionNode);
             break;
         case Flags::ActionFlag::UPDATE_NODE_VALUE:
+            lastActionType = 6;
             actionNodeUpdateNodeValueFunction(actionNode);
             break;
     }
@@ -451,6 +456,21 @@ void Controller::getAllOutputs() {
         this_thread::sleep_for(chrono::milliseconds(loopwait));
     }
 }
+void Controller::mainLoop(const int turnLimit) {
+    DataBits::initTurn();
+    while (DataBits::getTurn() < turnLimit) {
+        cout << "loop" << endl;
+
+        DataBits::incrTurn();
+
+        setMetricInputs();
+        cout << "F: " << fitness << endl;
+
+        getAllOutputs();
+        //this_thread::sleep_for(chrono::milliseconds(loopwait));
+    }
+}
+
 
 void Controller::saveActionToFile(const std::string& s) {
     std::ofstream saveFile("..\\" + name + ".lsv", std::ios::app);
@@ -503,6 +523,7 @@ void Controller::loadFromFile() {
                     n->setValue(val);
 
                     nodes.addNode(n);
+                    valueInputs.addNode(n);
                     unusedNodes.addNode(n);
                     nodes.checkID(id);
                 } else if (infobit == "+n2") {
@@ -587,6 +608,9 @@ void Controller::loadFromFile() {
                         case 5:
                             // update weight
                             n = new Nodes::UpdateWeightNode(id, threshold);
+                            break;
+                        case 6:
+                            n = new Nodes::UpdateNodeValueNode(id, threshold);
                             break;
                         default:
                             // invalid input punished with do nothing action
@@ -849,49 +873,49 @@ void Controller::generateInitialController() {
 
     //// metric inputs ////
 
-    fitnessInput = new Nodes::Input(nodes.getNextID()); // 0
-    nodes.addNode(fitnessInput);
-    unusedNodesInput = new Nodes::Input(nodes.getNextID()); // 1
-    nodes.addNode(unusedNodesInput);
-    unusedSynsInput = new Nodes::Input(nodes.getNextID()); // 2
-    nodes.addNode(unusedSynsInput);
-    networkSizeInput = new Nodes::Input(nodes.getNextID()); // 3
-    nodes.addNode(networkSizeInput);
-    fitnessDeltaInput = new Nodes::Input(nodes.getNextID()); // 4
-    nodes.addNode(fitnessDeltaInput);
-    fitnessAvgInput = new Nodes::Input(nodes.getNextID()); // 5
-    nodes.addNode(fitnessAvgInput);
-    turnsSinceFitnessDecInput = new Nodes::Input(nodes.getNextID()); // 6
-    nodes.addNode(turnsSinceFitnessDecInput);
-    outputCalcTimeInput = new Nodes::Input(nodes.getNextID()); // 7
-    nodes.addNode(outputCalcTimeInput);
+//    fitnessInput = new Nodes::Input(nodes.getNextID()); // 0
+//    nodes.addNode(fitnessInput);
+//    unusedNodesInput = new Nodes::Input(nodes.getNextID()); // 1
+//    nodes.addNode(unusedNodesInput);
+//    unusedSynsInput = new Nodes::Input(nodes.getNextID()); // 2
+//    nodes.addNode(unusedSynsInput);
+//    networkSizeInput = new Nodes::Input(nodes.getNextID()); // 3
+//    nodes.addNode(networkSizeInput);
+//    fitnessDeltaInput = new Nodes::Input(nodes.getNextID()); // 4
+//    nodes.addNode(fitnessDeltaInput);
+//    fitnessAvgInput = new Nodes::Input(nodes.getNextID()); // 5
+//    nodes.addNode(fitnessAvgInput);
+//    turnsSinceFitnessDecInput = new Nodes::Input(nodes.getNextID()); // 6
+//    nodes.addNode(turnsSinceFitnessDecInput);
+//    outputCalcTimeInput = new Nodes::Input(nodes.getNextID()); // 7
+//    nodes.addNode(outputCalcTimeInput);
 
     //// layer sizes and helpful numbers ////
 
-    const int startID = 8;
+    const int startID = 9;
     // base inputs
-    const int baseInputs = 6; // split 50/50 between random and static
+    const int baseInputs = 12; // split 50/50 between random and static
     const int baseInputHiddenLayers = 2;
-    const int nodesPerInputHiddenLayer = 6;
+    const int nodesPerInputHiddenLayer = 10;
     const int firstInputHiddenLayerStartID = startID + baseInputs;
     // main hidden layers
-    const int hiddenLayers = 2;
-    const int nodesPerHiddenLayer = 18;
+    const int hiddenLayers = 3;
+    const int nodesPerHiddenLayer = 19;
     const int firstHiddenLayerStartID = firstInputHiddenLayerStartID
             + (nodesPerInputHiddenLayer * baseInputHiddenLayers);
     // output params inputs split layer
     const int nodesToOutputParams = 10;
     const int nodesToOutputParamsStartID = firstInputHiddenLayerStartID
             + (nodesPerHiddenLayer * hiddenLayers);
-    const int nodesToOutputFiringThreshold = 8;
+    const int nodesToOutputFiringThreshold = 2;
     const int nodesToOutFireThreshStartID = nodesToOutputParamsStartID + nodesToOutputParams;
     // output params layer
     const int totalOutputParams = 25;
     const int outputParamNodesStartID = nodesToOutFireThreshStartID + nodesToOutputFiringThreshold;
-    const int firingThresholdNodes = 4;
+    const int firingThresholdNodes = 2;
     const int firingThresholdNodesStartID = outputParamNodesStartID + totalOutputParams;
     // outputs
-    const int actionOutputs = 7;
+    const int actionOutputs = 6;
     const int actionOutputsStartID = firingThresholdNodesStartID + firingThresholdNodes;
     // extras to play with
     const int extraOutputs = 5;
@@ -968,10 +992,10 @@ void Controller::generateInitialController() {
     saveActionToFile("\n");
 
     // outputs //
-    Nodes::Node* doNothingOutput = new Nodes::ActionNode(nodes.getNextID(), LDRandomFloat(), 0);
-    saveActionToFile(doNothingOutput->saveNode());
-    nodes.addNode(doNothingOutput);
-    outputs.addNode(doNothingOutput);
+    //Nodes::Node* doNothingOutput = new Nodes::ActionNode(nodes.getNextID(), LDRandomFloat(), 0);
+    //saveActionToFile(doNothingOutput->saveNode());
+    //nodes.addNode(doNothingOutput);
+    //outputs.addNode(doNothingOutput);
     Nodes::Node* addNodeOutput = new Nodes::AddNodeNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(addNodeOutput->saveNode());
     nodes.addNode(addNodeOutput);
@@ -1003,7 +1027,7 @@ void Controller::generateInitialController() {
     // connect outputs to params and threshold nodes //
     // params
     int currParamStartID = outputParamNodesStartID;
-    int outputID = actionOutputsStartID + 1;  // doNothing action takes no parameters
+    int outputID = actionOutputsStartID;  // doNothing action takes no parameters
     // add node
     connectTwoLayers(currParamStartID, 8, outputID, 1);
     currParamStartID += 8;
@@ -1059,9 +1083,9 @@ float Controller::getUnusedPartFitnessImpact() {
                         + ((pow(scaledUURatio, uunodes) / totalNetSize)
                             + (pow(scaledUURatio, uusyns) / totalNetSize));
 
-    cout << "UU impact: " << min(max(0.0f, impactValue), 100.0f) << endl;
+    //cout << "UU impact: " << min(max(0.0f, impactValue), 100.0f) << endl;
 
-    return min(max(0.0f, impactValue), 100.0f);
+    return min(max(0.0f, impactValue), 500.0f);
 }
 
 float Controller::getCalcTimeFitnessImpact() {
@@ -1078,7 +1102,7 @@ float Controller::getCalcTimeFitnessImpact() {
     // to get a basic percentage and then a multiplyer. lower avg and bigger improvement is good
     float impactValue = (100 * avgToCurrCalcRatio + largeAvgCalcTimePunishment) / 100;
 
-    cout << "CT impact: " << impactValue << endl;
+    //cout << "CT impact: " << impactValue << endl;
 
     return impactValue;
 }
@@ -1089,7 +1113,7 @@ float Controller::getFitnessFitnessImpact() {
 
     float impactValue = decTurnsScaled * fitnessCurrToAvgRatio;
 
-    cout << "FF impact: " << impactValue << endl;
+    //cout << "FF impact: " << impactValue << endl;
 
     return impactValue;
 }
@@ -1104,12 +1128,12 @@ float Controller::calcFitness() {
     return fitness;
 }
 
-float Controller::getFitness() const { return fitness; }
+float Controller::getFitness() { return fitnessAvg.getAverage(); }
 
 void Controller::setMetricInputs() {
-    unusedNodesInput->setValue((float)unusedNodes.getNumItems());
-    unusedSynsInput->setValue((float)unusedSynapses.getNumItems());
-    networkSizeInput->setValue((float)nodes.getNumItems() + (float)synapses.getNumItems());
+    unusedNodesInput->setValue(UtilFunctions::sigmoid((float)unusedNodes.getNumItems()));
+    unusedSynsInput->setValue(UtilFunctions::sigmoid((float)unusedSynapses.getNumItems()));
+    networkSizeInput->setValue(UtilFunctions::sigmoid((float)nodes.getNumItems() + (float)synapses.getNumItems()));
 
     fitnessInput->setValue(calcFitness());
     fitnessDeltaInput->setValue(fitnessDelta);
@@ -1117,12 +1141,14 @@ void Controller::setMetricInputs() {
     turnsSinceFitnessDecInput->setValue((float)fitDecTurns);
 
     outputCalcTimeInput->setValue((float)calcTime / 1000000.0f);
+
+    lastActionTypeInput->setValue((float)lastActionType);
 }
 
 void Controller::actionNodeUpdateWeightFunction(Nodes::ActionNode *actionNode) {
     auto node = dynamic_cast<Nodes::UpdateWeightNode*>(actionNode);
 
-    unsigned int targetID = (unsigned int)(node->getTargetID() * (float)weightedSynapses.getNumItems()) * weightedSynapses.getNumItems();
+    unsigned int targetID = (unsigned int)(node->getTargetID() * (float)weightedSynapses.getNumItems()) % weightedSynapses.getNumItems();
     float weightModifier = node->getWeightModifier();
     bool replacing = node->replacingWeight();
 
@@ -1132,14 +1158,14 @@ void Controller::actionNodeUpdateWeightFunction(Nodes::ActionNode *actionNode) {
 
     target->setWeight(newWeight);
 
-    string saveString = "=sw " + to_string(target->getID()) + " " + to_string(target->getWeight());
+    string saveString = "=sw " + to_string(target->getID()) + " " + to_string(target->getWeight()) + " ";
     saveActionToFile(saveString);
 }
 
 void Controller::actionNodeUpdateNodeValueFunction(Nodes::ActionNode *actionNode) {
     auto node = dynamic_cast<Nodes::UpdateNodeValueNode*>(actionNode);
 
-    unsigned int targetID = (unsigned int)(node->getTargetID() * (float)valueInputs.getNumItems()) * valueInputs.getNumItems();
+    unsigned int targetID = (unsigned int)(node->getTargetID() * (float)valueInputs.getNumItems()) % valueInputs.getNumItems();
     float valueModifier = node->getValueModifier();
     bool replacing = node->replacingValue();
 
@@ -1149,7 +1175,7 @@ void Controller::actionNodeUpdateNodeValueFunction(Nodes::ActionNode *actionNode
 
     target->setValue(newValue);
 
-    string saveString = "=iv " + to_string(target->getID()) + " " + to_string(target->getValue());
+    string saveString = "=iv " + to_string(target->getID()) + " " + to_string(target->getValue()) + " ";
     saveActionToFile(saveString);
 }
 
@@ -1170,7 +1196,7 @@ void Controller::connectTwoLayers(const int prevLayerStartID, const int nodesInP
 
     for (int nextLayerNodeID = nextLayerStartID; nextLayerNodeID < nextLayerStartID + nodesInNextLayer; nextLayerNodeID++) {
         for (int prevLayerNodeID = prevLayerStartID; prevLayerNodeID < prevLayerStartID + nodesInPrevLayer; prevLayerNodeID++) {
-            syn = new Synapses::WeightedSynapse(synapses.getNextID(), UtilFunctions::LDRandomFloat());
+            syn = new Synapses::WeightedSynapse(synapses.getNextID(), (UtilFunctions::LDRandomFloat() * 2) - 1);
 
             saveActionToFile(syn->saveSynapse());
 
@@ -1192,4 +1218,4 @@ void Controller::createAndConnectUniformRepeatedLayers(const int firstLayerStart
     }
 }
 
-
+string Controller::getName() const { return name; }

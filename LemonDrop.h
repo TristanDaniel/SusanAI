@@ -30,9 +30,10 @@ namespace LemonDrop {
                     * fitnessDeltaInput,
                     * fitnessAvgInput,
                     * turnsSinceFitnessDecInput,
-                    * outputCalcTimeInput;
+                    * outputCalcTimeInput,
+                    * lastActionTypeInput;
 
-        int loopwait = 1000;
+        int loopwait = 500;
 
         float fitness, prevFitness, fitnessDelta;
         int fitDecTurns;
@@ -41,6 +42,7 @@ namespace LemonDrop {
         UtilClasses::RunningAverage<float> fitnessAvg;
         int calcAvgTurns = 10;
         UtilClasses::RunningAverage<long long int> calcAvg;
+        int lastActionType;
 
 
 
@@ -57,8 +59,6 @@ namespace LemonDrop {
 
 
         void getAllOutputs();
-
-        [[noreturn]] void mainLoop();
 
         void saveActionToFile(const std::string& s);
         void loadFromFile();
@@ -83,7 +83,6 @@ namespace LemonDrop {
         float getCalcTimeFitnessImpact();
         float getFitnessFitnessImpact();
         float calcFitness();
-        [[nodiscard]] float getFitness() const;
 
         void setMetricInputs();
 
@@ -96,6 +95,15 @@ namespace LemonDrop {
         Controller();
         Controller(const std::string& contName, bool generateNew);
         Controller(const std::string& contName, const std::string& fileToLoadFrom);
+
+        [[noreturn]] void mainLoop();
+        void mainLoop(int turnLimit);
+
+        void operator()(int turnLimit);
+
+        [[nodiscard]] float getFitness();
+
+        std::string getName() const;
     };
 
 }
