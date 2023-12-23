@@ -42,17 +42,24 @@ Controller::Controller() {
     nodes.addNode(turnsSinceFitnessDecInput);
     outputCalcTimeInput = new Nodes::Input(nodes.getNextID()); // 7
     nodes.addNode(outputCalcTimeInput);
-    lastActionTypeInput = new Nodes::Input(nodes.getNextID()); // 7
+    lastActionTypeInput = new Nodes::Input(nodes.getNextID()); // 8
     nodes.addNode(lastActionTypeInput);
+    actionTypeAgvInput = new Nodes::Input(nodes.getNextID()); // 9
+    nodes.addNode(actionTypeAgvInput);
+    turnsSinceStructureChangeInput = new Nodes::Input(nodes.getNextID()); // 10
+    nodes.addNode(turnsSinceStructureChangeInput);
 
     fitnessAvg = UtilClasses::RunningAverage<float>(fitAvgTurns);
     calcAvg = UtilClasses::RunningAverage<long long int>(calcAvgTurns);
+    actionTypeAvg = UtilClasses::RunningAverage<int>(actionTypeAvgTurns);
 
     fitness = 100;
     prevFitness = 100;
     fitnessDelta = 0;
     calcTime = 3000000;
     fitDecTurns = 1;
+    lastActionType = 0;
+    turnsSinceStructureChange = 0;
 }
 
 Controller::Controller(const std::string& contName, const bool generateNew) : Controller() {
@@ -412,62 +419,59 @@ void Controller::getAllOutputs() {
     if (highestFiringActionValue == 0) return;
     switch (actionNode->getActionType()) {
         case Flags::ActionFlag::DO_NOTHING:
-            lastActionType = 0;
             cout << "Doing nothing" << endl;
             break;
         case Flags::ActionFlag::ADD_NODE:
-            lastActionType = 1;
             actionNodeAddNodeFunction(actionNode);
+            turnsSinceStructureChange = 0;
             break;
         case Flags::ActionFlag::ADD_SYNAPSE:
-            lastActionType = 2;
             actionNodeAddSynapseFunction(actionNode);
+            turnsSinceStructureChange = 0;
             break;
         case Flags::ActionFlag::MAKE_CONNECTION:
-            lastActionType = 3;
             actionNodeMakeConnectionFunction(actionNode);
+            turnsSinceStructureChange = 0;
             break;
         case Flags::ActionFlag::SET_FLAG_FOR_NODE:
-            lastActionType = 4;
             actionNodeSetFlagForNodeFunction(actionNode);
             break;
         case Flags::ActionFlag::UPDATE_WEIGHT:
-            lastActionType = 5;
             actionNodeUpdateWeightFunction(actionNode);
             break;
         case Flags::ActionFlag::UPDATE_NODE_VALUE:
-            lastActionType = 6;
             actionNodeUpdateNodeValueFunction(actionNode);
             break;
     }
+
+    lastActionType = (int)actionNode->getActionType();
+    actionTypeAvg.addValue(lastActionType);
 }
 
+void Controller::loop() {
+    cout << "loop" << endl;
+
+    DataBits::incrTurn();
+
+    setMetricInputs();
+    cout << "F: " << fitness << endl;
+
+    getAllOutputs();
+
+    turnsSinceStructureChange++;
+
+    //this_thread::sleep_for(chrono::milliseconds(loopwait));
+}
 [[noreturn]] void Controller::mainLoop() {
     DataBits::initTurn();
     while (true) {
-        cout << "loop" << endl;
-
-        DataBits::incrTurn();
-
-        setMetricInputs();
-        cout << "F: " << fitness << endl;
-
-        getAllOutputs();
-        this_thread::sleep_for(chrono::milliseconds(loopwait));
+        loop();
     }
 }
 void Controller::mainLoop(const int turnLimit) {
     DataBits::initTurn();
     while (DataBits::getTurn() < turnLimit) {
-        cout << "loop" << endl;
-
-        DataBits::incrTurn();
-
-        setMetricInputs();
-        cout << "F: " << fitness << endl;
-
-        getAllOutputs();
-        //this_thread::sleep_for(chrono::milliseconds(loopwait));
+        loop();
     }
 }
 
@@ -892,7 +896,7 @@ void Controller::generateInitialController() {
 
     //// layer sizes and helpful numbers ////
 
-    const int startID = 9;
+    const int startID = 11;
     // base inputs
     const int baseInputs = 12; // split 50/50 between random and static
     const int baseInputHiddenLayers = 2;
@@ -1085,7 +1089,7 @@ float Controller::getUnusedPartFitnessImpact() {
 
     //cout << "UU impact: " << min(max(0.0f, impactValue), 100.0f) << endl;
 
-    return min(max(0.0f, impactValue), 500.0f);
+    return min(max(0.0f, impactValue), 1000.0f);
 }
 
 float Controller::getCalcTimeFitnessImpact() {
@@ -1118,8 +1122,20 @@ float Controller::getFitnessFitnessImpact() {
     return impactValue;
 }
 
+float Controller::getTurnAndStructureFitnessImpact() {
+    float impactValue = 30;
+
+    if (lastActionType + 0.5 >= actionTypeAvg.getAverage()
+        && lastActionType - 0.5 <= actionTypeAvg.getAverage()) impactValue -= 100;
+
+    impactValue -= (float)turnsSinceStructureChange;
+
+    return impactValue;
+}
+
 float Controller::calcFitness() {
-    fitness = 100 * getCalcTimeFitnessImpact() + getFitnessFitnessImpact() - getUnusedPartFitnessImpact();
+    fitness = 100 * getCalcTimeFitnessImpact() + getFitnessFitnessImpact()
+            - getUnusedPartFitnessImpact() - getTurnAndStructureFitnessImpact();
     fitDecTurns = fitness >= prevFitness ? fitDecTurns + 1 : 1;
     fitnessDelta = fitness - prevFitness;
     prevFitness = fitness;
@@ -1143,6 +1159,9 @@ void Controller::setMetricInputs() {
     outputCalcTimeInput->setValue((float)calcTime / 1000000.0f);
 
     lastActionTypeInput->setValue((float)lastActionType);
+    actionTypeAgvInput->setValue(actionTypeAvg.getAverage());
+
+    turnsSinceStructureChangeInput->setValue((float)turnsSinceStructureChange);
 }
 
 void Controller::actionNodeUpdateWeightFunction(Nodes::ActionNode *actionNode) {

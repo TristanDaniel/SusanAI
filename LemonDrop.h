@@ -31,7 +31,9 @@ namespace LemonDrop {
                     * fitnessAvgInput,
                     * turnsSinceFitnessDecInput,
                     * outputCalcTimeInput,
-                    * lastActionTypeInput;
+                    * lastActionTypeInput,
+                    * actionTypeAgvInput,
+                    * turnsSinceStructureChangeInput;
 
         int loopwait = 500;
 
@@ -43,7 +45,7 @@ namespace LemonDrop {
         int calcAvgTurns = 10;
         UtilClasses::RunningAverage<long long int> calcAvg;
         int lastActionType;
-         int actionTypeAvgTurns = 10;
+        int actionTypeAvgTurns = 10;
         UtilClasses::RunningAverage<int> actionTypeAvg;
         int turnsSinceStructureChange;
 
@@ -85,6 +87,7 @@ namespace LemonDrop {
         float getUnusedPartFitnessImpact();
         float getCalcTimeFitnessImpact();
         float getFitnessFitnessImpact();
+        float getTurnAndStructureFitnessImpact();
         float calcFitness();
 
         void setMetricInputs();
@@ -93,6 +96,7 @@ namespace LemonDrop {
         void connectTwoLayers(int prevLayerStartID, int nodesInPrevLayer, int nextLayerStartID, int nodesInNextLayer);
         void createAndConnectUniformRepeatedLayers(int firstLayerStartID, int nodesPerLayer, int layers);
 
+        void loop();
 
     public:
         Controller();
@@ -107,6 +111,8 @@ namespace LemonDrop {
         [[nodiscard]] float getFitness();
 
         [[nodiscard]] std::string getName() const;
+
+
     };
 
 }
