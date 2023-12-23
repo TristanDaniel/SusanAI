@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <fstream>
 
 #include "Nodes.h"
 
@@ -13,6 +14,9 @@ namespace Synapses {
 		unsigned int id{ 0 };
 
 		Nodes::Node* input{}, * output{};
+
+        bool totalSaving = false;
+        unsigned long long int lastTotalSave;
 
 	public:
 
@@ -31,6 +35,7 @@ namespace Synapses {
         bool isUnused();
 
         virtual std::string saveSynapse() = 0;
+        void totalSave(std::ofstream& saveFile);
 
 		bool operator==(const Synapse& s) const;
 	};

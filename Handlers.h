@@ -62,5 +62,7 @@ namespace Handlers{
 
         Synapses::Synapse* getSynapseByID(unsigned int id);
         Synapses::Synapse* getSynapseByCount(unsigned int idx);
+
+        std::vector<Synapses::Synapse*> getSynapses();
     };
 }

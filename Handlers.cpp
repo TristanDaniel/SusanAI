@@ -85,5 +85,7 @@ Synapses::Synapse* SynapseHandler::getSynapseByCount(unsigned int idx) {
     return nullptr;
 }
 
+std::vector<Synapses::Synapse *> SynapseHandler::getSynapses() { return synapses; }
+
 
 

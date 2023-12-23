@@ -62,12 +62,16 @@ Controller::Controller() {
     turnsSinceStructureChange = 0;
 }
 
-Controller::Controller(const std::string& contName, const bool generateNew) : Controller() {
+Controller::Controller(const std::string& contName, const bool generateNew, const bool wsMode, const bool vaMode) : Controller() {
     name = contName;
+    withoutSaveMode = wsMode;
+    verboseActionsMode = vaMode;
 
     if (generateNew) {
-        std::ofstream saveFile("..\\" + contName + ".lsv");
-        saveFile.close();
+        if (!withoutSaveMode) {
+            std::ofstream saveFile("..\\" + contName + ".lsv");
+            saveFile.close();
+        }
 
         generateInitialController();
     } else {
@@ -77,8 +81,11 @@ Controller::Controller(const std::string& contName, const bool generateNew) : Co
     saveActionToFile("\n");
 }
 
-Controller::Controller(const std::string &contName, const std::string &fileToLoadFrom) : Controller() {
+Controller::Controller(const std::string &contName, const std::string &fileToLoadFrom, const bool wsMode, const bool vaMode) : Controller() {
     name = fileToLoadFrom;
+    withoutSaveMode = wsMode;
+    verboseActionsMode = vaMode;
+
     initController();
     filesystem::copy("..\\" + fileToLoadFrom + ".lsv", "..\\" + contName + ".lsv");
     name = contName;
@@ -108,7 +115,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             saveActionToFile(n->saveNode());
 
-            cout << n->saveNode() << endl;
+            //cout << n->saveNode() << endl;
 
             return true;
         }
@@ -128,7 +135,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             saveActionToFile(n->saveNode());
 
-            cout << n->saveNode() << endl;
+            //cout << n->saveNode() << endl;
 
             return true;
         }
@@ -151,7 +158,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             saveActionToFile(n->saveNode());
 
-            cout << n->saveNode() << endl;
+            //cout << n->saveNode() << endl;
 
             return true;
         }
@@ -171,7 +178,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             saveActionToFile(n->saveNode());
 
-            cout << n->saveNode() << endl;
+            //cout << n->saveNode() << endl;
 
             return true;
         }
@@ -192,7 +199,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             saveActionToFile(n->saveNode());
 
-            cout << n->saveNode() << endl;
+            //cout << n->saveNode() << endl;
 
             return true;
 
@@ -242,7 +249,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
             saveActionToFile(n->saveNode());
 
-            cout << n->saveNode() << endl;
+            //cout << n->saveNode() << endl;
 
             return true;
         }
@@ -271,7 +278,7 @@ bool Controller::newOutput(unsigned int type, ParamPackages::NodeParams params) 
 
             saveActionToFile(n->saveNode());
 
-            cout << n->saveNode() << endl;
+            //cout << n->saveNode() << endl;
 
             return true;
         }
@@ -298,7 +305,7 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
 
             saveActionToFile(s->saveSynapse());
 
-            cout << s->saveSynapse() << endl;
+            //cout << s->saveSynapse() << endl;
 
             return true;
         }
@@ -318,7 +325,7 @@ bool Controller::newSynapse(unsigned int type, ParamPackages::SynapseParams para
 
             saveActionToFile(s->saveSynapse());
 
-            cout << s->saveSynapse() << endl;
+            //cout << s->saveSynapse() << endl;
 
             return true;
         }
@@ -477,6 +484,9 @@ void Controller::mainLoop(const int turnLimit) {
 
 
 void Controller::saveActionToFile(const std::string& s) {
+    if (verboseActionsMode) cout << s << endl;
+    if (withoutSaveMode) return;
+
     std::ofstream saveFile("..\\" + name + ".lsv", std::ios::app);
 
     if (saveFile.is_open()) {
@@ -866,7 +876,7 @@ void Controller::actionNodeSetFlagForNodeFunction(Nodes::ActionNode *actionNode)
 
     string saveString = "=f " + to_string(targetID) + " " + to_string(abs(node->getFlagVal())) + " ";
     saveActionToFile(saveString);
-    cout << saveString << endl;
+    //cout << saveString << endl;
 }
 
 
@@ -1238,3 +1248,28 @@ void Controller::createAndConnectUniformRepeatedLayers(const int firstLayerStart
 }
 
 string Controller::getName() const { return name; }
+
+void Controller::totalSave() {
+    filesystem::copy("..\\" + name + ".lsv", "..\\" + name + "_backup_"
+                        + to_string(DataBits::getTurn()) + ".lsv");
+
+    totalSave(name);
+}
+void Controller::totalSave(const std::string& fileName) {
+    std::ofstream saveFile("..\\" + fileName + ".lsv", std::ios::app);
+
+    for (auto n : nodes.getNodes()) {
+        n->totalSave(saveFile);
+    }
+
+    saveFile << "\n";
+
+    for (auto syn : synapses.getSynapses()) {
+        syn->totalSave(saveFile);
+    }
+
+    saveFile.close();
+}
+
+void Controller::setWithoutSaveMode(bool mode) { withoutSaveMode = mode; }
+void Controller::setVerboseActionsMode(bool mode) { verboseActionsMode = mode; }

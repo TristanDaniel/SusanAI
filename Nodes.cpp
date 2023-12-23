@@ -205,6 +205,28 @@ string Node::getFlagListString() {
     return s;
 }
 
+void Node::totalSave(ofstream& saveFile) {
+
+    saveFile << saveNode();
+
+    /*if (totalSaving || lastTotalSave == DataBits::getTurn()) return;
+
+    totalSaving = true;
+
+    saveFile << saveNode();
+
+    for (auto syn : synapses) {
+        syn->totalSave(saveFile);
+    }
+    for (auto syn : outputs) {
+        syn->totalSave(saveFile);
+    }
+
+    lastTotalSave = DataBits::getTurn();
+    totalSaving = false;*/
+
+}
+
 string NotInputNode::saveNode() {
     return "+n0 " + to_string(getID()) + " " + getFlagListString();
 }

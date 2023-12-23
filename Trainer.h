@@ -9,6 +9,7 @@ namespace ControllerTrainer {
     const int genLength = 100;  // number of turns per generation
     const int newAgentsPerGen = 10;  // number of fresh controllers to generate for each generation
 
+
     void train();
 
 }

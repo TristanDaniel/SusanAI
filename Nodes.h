@@ -3,6 +3,7 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
+#include <fstream>
 
 #include "Structures.h"
 #include "Utils.h"
@@ -31,6 +32,9 @@ namespace Nodes {
         Flags::NodeFlag cycleFlag = Flags::NodeFlag::NONE_FLAG;
         //std::vector<Flags::NodeFlag> flags;
 
+        bool totalSaving = false;
+        unsigned long long int lastTotalSave = 0;
+
         std::string getFlagListString();
 
 	public:
@@ -57,6 +61,7 @@ namespace Nodes {
         bool isUnused();
 
         virtual std::string saveNode() = 0;
+        void totalSave(std::ofstream& saveFile);
 	};
 
 	class NotInputNode : public Node {

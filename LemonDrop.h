@@ -13,6 +13,9 @@ namespace LemonDrop {
 
         std::string name;
 
+        bool withoutSaveMode = false;
+        bool verboseActionsMode = true;
+
         Handlers::NodeHandler nodes;
         Handlers::NodeHandler outputs;
         Handlers::NodeHandler fireables;
@@ -100,8 +103,8 @@ namespace LemonDrop {
 
     public:
         Controller();
-        Controller(const std::string& contName, bool generateNew);
-        Controller(const std::string& contName, const std::string& fileToLoadFrom);
+        Controller(const std::string& contName, bool generateNew, bool withoutSaveMode, bool verboseActionsMode);
+        Controller(const std::string& contName, const std::string& fileToLoadFrom, bool withoutSaveMode, bool verboseActionsMode);
 
         [[noreturn]] void mainLoop();
         void mainLoop(int turnLimit);
@@ -112,7 +115,11 @@ namespace LemonDrop {
 
         [[nodiscard]] std::string getName() const;
 
+        void totalSave();
+        void totalSave(const std::string& fileName);
 
+        void setWithoutSaveMode(bool mode);
+        void setVerboseActionsMode(bool mode);
     };
 
 }
