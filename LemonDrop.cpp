@@ -87,10 +87,10 @@ Controller::Controller(const std::string &contName, const std::string &fileToLoa
     verboseActionsMode = vaMode;
 
     initController();
-    filesystem::copy("..\\" + fileToLoadFrom + ".lsv", "..\\" + contName + ".lsv");
+    if (!withoutSaveMode) filesystem::copy("..\\" + fileToLoadFrom + ".lsv", "..\\" + contName + ".lsv");
     name = contName;
 
-    saveActionToFile("\n");
+    if (!withoutSaveMode) saveActionToFile("\n");
 }
 
 void Controller::operator()(int turnLimit) { mainLoop(turnLimit); }
@@ -456,12 +456,12 @@ void Controller::getAllOutputs() {
 }
 
 void Controller::loop() {
-    cout << "loop" << endl;
+    if (verboseActionsMode) cout << "loop" << endl;
 
     DataBits::incrTurn();
 
     setMetricInputs();
-    cout << "F: " << fitness << endl;
+    if (verboseActionsMode) cout << "F: " << fitness << endl;
 
     getAllOutputs();
 
@@ -480,6 +480,9 @@ void Controller::mainLoop(const int turnLimit) {
     while (DataBits::getTurn() < turnLimit) {
         loop();
     }
+
+    std::ofstream saveFile("..\\" + name + "_fitness.txt");
+    saveFile << to_string(fitnessAvg.getAverage());
 }
 
 
@@ -908,13 +911,13 @@ void Controller::generateInitialController() {
 
     const int startID = 11;
     // base inputs
-    const int baseInputs = 12; // split 50/50 between random and static
+    const int baseInputs = 4; // split 50/50 between random and static
     const int baseInputHiddenLayers = 2;
-    const int nodesPerInputHiddenLayer = 10;
+    const int nodesPerInputHiddenLayer = 2;
     const int firstInputHiddenLayerStartID = startID + baseInputs;
     // main hidden layers
-    const int hiddenLayers = 3;
-    const int nodesPerHiddenLayer = 19;
+    const int hiddenLayers = 4;
+    const int nodesPerHiddenLayer = 20;
     const int firstHiddenLayerStartID = firstInputHiddenLayerStartID
             + (nodesPerInputHiddenLayer * baseInputHiddenLayers);
     // output params inputs split layer
@@ -1256,7 +1259,7 @@ void Controller::totalSave() {
     totalSave(name);
 }
 void Controller::totalSave(const std::string& fileName) {
-    std::ofstream saveFile("..\\" + fileName + ".lsv", std::ios::app);
+    std::ofstream saveFile("..\\" + fileName + ".lsv");
 
     for (auto n : nodes.getNodes()) {
         n->totalSave(saveFile);
@@ -1273,3 +1276,21 @@ void Controller::totalSave(const std::string& fileName) {
 
 void Controller::setWithoutSaveMode(bool mode) { withoutSaveMode = mode; }
 void Controller::setVerboseActionsMode(bool mode) { verboseActionsMode = mode; }
+
+void Controller::resetFitness() {
+    fitness = 100;
+
+    for (int i = 0; i < fitAvgTurns; i++) {
+        fitnessAvg.addValue(100);
+    }
+}
+
+float Controller::getSavedFitness() {
+    std::ifstream loadFile("..\\" + name + "_fitness.txt");
+
+    float fit;
+    loadFile >> fit;
+
+    return fit;
+}
+

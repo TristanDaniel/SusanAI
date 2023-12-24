@@ -120,6 +120,9 @@ namespace LemonDrop {
 
         void setWithoutSaveMode(bool mode);
         void setVerboseActionsMode(bool mode);
+
+        void resetFitness();
+        float getSavedFitness();
     };
 
 }

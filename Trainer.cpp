@@ -12,89 +12,105 @@ using namespace std;
 void ControllerTrainer::train() {
     cout << "Train start" << endl;
 
-    LemonDrop::Controller controllers[genSize];
+    LemonDrop::Controller* controllers[genSize];
     std::string baseName = "controller";
 
+    cout << "Making first generation" << endl;
     for (int i = 0; i < genSize; i++) {
         string  name = baseName + "_g0_a" + to_string(i);
-        controllers[i] = LemonDrop::Controller(name, true, true, false);
+        controllers[i] = new LemonDrop::Controller(name, true, true, false);
+        controllers[i]->resetFitness();
     }
 
     for (int i = 0; i < generations; i++) {
-        cout << "!!!!!!!!!!!!!!!!!!! Starting Generation " + to_string(i) + " !!!!!!!!!!!!!!!!!!!";
+        cout << "!!!!!!!!!!!!!!!!!!! Starting Generation " + to_string(i) + " !!!!!!!!!!!!!!!!!!!\n";
 
         if (i != 0) {
-            float minHighestFitness = -10000;
-            LemonDrop::Controller minBestController;
-            float highestFitness = -10000;
-            LemonDrop::Controller bestController;
+            cout << "Processing gen " << to_string(i) << endl;
+            float minHighestFitness = 1000000;
+            LemonDrop::Controller* minBestController;
+            //float highestFitness = -10000;
+            //LemonDrop::Controller* bestController;
 
-            vector<LemonDrop::Controller> bestControllers;
+            vector<LemonDrop::Controller*> bestControllers;
             int queueSize = genSize - newAgentsPerGen;
 
-            for (LemonDrop::Controller controller : controllers) {
-                float contFitness = controller.getFitness();
+            for (auto controller : controllers) {
+                float contFitness = controller->getSavedFitness();
 
                 if (bestControllers.size() < queueSize) {
                     bestControllers.push_back(controller);
                     if (contFitness < minHighestFitness) {
                         minHighestFitness = contFitness;
-                        minBestController = controller;
+                        minBestController = &*controller;
                     }
+//                    if (contFitness > highestFitness) {
+//                        highestFitness = contFitness;
+//                        bestController = &*controller;
+//                    }
                 } else {
                     if (contFitness > minHighestFitness) {
                         bestControllers.push_back(controller);
                         minHighestFitness = contFitness;
 
-                        bestControllers.erase(remove_if(bestControllers.begin(), bestControllers.end(), [&minBestController](LemonDrop::Controller c) { return c.getName() == minBestController.getName(); }), bestControllers.end());
+                        bestControllers.erase(remove_if(bestControllers.begin(), bestControllers.end(),
+                                                        [&minBestController](LemonDrop::Controller *c)
+                                                        { return c->getName() == minBestController->getName(); }),bestControllers.end());
 
-                        minBestController = controller;
+                        minBestController = &*controller;
                         for (auto c : bestControllers) {
-                            if (c.getFitness() < minHighestFitness) {
-                                minBestController = c;
-                                minHighestFitness = c.getFitness();
+                            if (c->getSavedFitness() < minHighestFitness) {
+                                minBestController = &*c;
+                                minHighestFitness = c->getSavedFitness();
                             }
                         }
                     }
                 }
 
-                if (contFitness > highestFitness) {
-                    highestFitness = contFitness;
-                    bestController = controller;
-                }
+//                if (contFitness > highestFitness) {
+//                    highestFitness = contFitness;
+//                    bestController = &*controller;
+//                }
             }
 
-            bestController.totalSave("best_g" + to_string(i-1) + "_" + to_string(bestController.getFitness()) + "_" + bestController.getName());
 
             int idx = 0;
-            for (auto c : bestControllers) {
-                controllers[idx++] = c;
+            for (auto cont : bestControllers) {
+                string saveName = "best_g" + to_string(i-1) + "_" + to_string(cont->getSavedFitness()) + "_" + cont->getName();
+                cont->totalSave(saveName);
+
+                controllers[idx] = new LemonDrop::Controller(cont->getName(), saveName, true, false);
+                controllers[idx++]->resetFitness();
+                //cont->totalSave(cont->getName() + "_g" + to_string(i-1));
             }
+
+            //bestController->totalSave("best_g" + to_string(i-1) + "_" + to_string(bestController->getFitness()) + "_" + bestController->getName());
 
             for (int j = genSize - newAgentsPerGen; j < genSize; ++j) {
                 string  name = baseName + "_g" + to_string(i) + "_a" + to_string(j);
 
-                controllers[j] = LemonDrop::Controller(name, true, true, false);
+                controllers[j] = new LemonDrop::Controller(name, true, true, false);
+                controllers[j]->resetFitness();
             }
         }
 
         thread runThreads[genSize];
-        for (int j = 0; j < genSize; j++) runThreads[j] = thread(controllers[j], genLength);
+        for (int j = 0; j < genSize; j++) runThreads[j] = thread(*controllers[j], genLength);
         for (auto & runThread : runThreads) runThread.join();
     }
 
     float highestFitness = -10000;
-    LemonDrop::Controller bestController;
+    LemonDrop::Controller* bestController;
 
-    for (LemonDrop::Controller controller : controllers) {
-        float contFitness = controller.getFitness();
+    for (auto controller : controllers) {
+        float contFitness = controller->getSavedFitness();
 
         if (contFitness > highestFitness) {
             highestFitness = contFitness;
-            bestController = controller;
+            bestController = &*controller;
         }
     }
 
-    string  bestControllerName = bestController.getName();
-    bestController.totalSave("best_final_" + to_string(bestController.getFitness()) + "_" + bestControllerName);
+    string  bestControllerName = bestController->getName();
+    bestController->totalSave("best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName);
 }
