@@ -22,7 +22,7 @@ namespace LemonDrop {
         Handlers::NodeHandler valueInputs;
         Handlers::NodeHandler unusedNodes;
 
-        std::vector<UtilClasses::ActionGroup> actionGroups;
+        std::vector<UtilClasses::ActionGroup*> actionGroups;
         UtilClasses::ActionGroup baseAG1, baseAG2, extraAG;
 
         Handlers::SynapseHandler synapses;

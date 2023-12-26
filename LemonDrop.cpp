@@ -22,9 +22,9 @@ Controller::Controller() {
     valueInputs.InitHandler();
     unusedNodes.InitHandler();
 
-    actionGroups.push_back(baseAG1);
-    actionGroups.push_back(baseAG2);
-    actionGroups.push_back(extraAG);
+    actionGroups.push_back(&baseAG1);
+    actionGroups.push_back(&baseAG2);
+    actionGroups.push_back(&extraAG);
 
     synapses.InitHandler();
     weightedSynapses.InitHandler();
@@ -82,6 +82,13 @@ Controller::Controller(const std::string& contName, const bool generateNew, cons
         initController();
     }
 
+    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(138)));
+    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(139)));
+    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(140)));
+    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(141)));
+    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(142)));
+    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(143)));
+
     saveActionToFile("\n");
 }
 
@@ -95,9 +102,19 @@ Controller::Controller(const std::string &contName, const std::string &fileToLoa
     name = contName;
 
     if (!withoutSaveMode) saveActionToFile("\n");
+
+    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(138)));
+    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(139)));
+    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(140)));
+    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(141)));
+    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(142)));
+    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(143)));
 }
 
-void Controller::operator()(int turnLimit) { mainLoop(turnLimit); }
+void Controller::operator()(int turnLimit) {
+    mainLoop(turnLimit);
+    totalSave(name);
+}
 
 bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
 
@@ -425,7 +442,7 @@ void Controller::getAllOutputs() {
     */
 
     for (auto ag : actionGroups) {
-        Nodes::ActionNode* actionNode = ag.getActionNode();
+        Nodes::ActionNode* actionNode = ag->getActionNode();
         if (actionNode != nullptr) actionQueue.push(actionNode);
     }
 
@@ -490,7 +507,7 @@ void Controller::loop() {
 
     turnsSinceStructureChange++;
 
-    this_thread::sleep_for(chrono::milliseconds(loopwait));
+    //this_thread::sleep_for(chrono::milliseconds(loopwait));
 }
 [[noreturn]] void Controller::mainLoop() {
     DataBits::initTurn();
@@ -795,12 +812,7 @@ void Controller::initController() {
     loadFromFile();
 
     // load action groups
-    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(138)));
-    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(139)));
-    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(140)));
-    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(141)));
-    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(142)));
-    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(143)));
+
 }
 
 void Controller::actionNodeAddNodeFunction(Nodes::ActionNode *actionNode) {
@@ -837,6 +849,9 @@ void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
     switch (conType) {
         case 0:
         {
+            if (unusedNodes.getNumItems() == 0) uu1 = false;
+            if (unusedSynapses.getNumItems() == 0) uu2 = false;
+
             unsigned int nodeIDLimVal = uu1 ? unusedNodes.getNumItems() : nodes.getCurrID();
             unsigned int synIDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();
 
@@ -849,6 +864,9 @@ void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
 
         case 1:
         {
+            if (unusedNodes.getNumItems() == 0) uu2 = false;
+            if (unusedSynapses.getNumItems() == 0) uu1 = false;
+
             unsigned int nodeIDLimVal = uu2 ? unusedNodes.getNumItems() : nodes.getCurrID();
             unsigned int synIDLimVal = uu1 ? unusedSynapses.getNumItems() : synapses.getCurrID();
 
@@ -860,6 +878,10 @@ void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         }
         case 2:
         {
+            if (unusedNodes.getNumItems() == 0) uu1 = false;
+            if (unusedSynapses.getNumItems() == 0) uu2 = false;
+            if (unusedNodes.getNumItems() == 0) uu3 = false;
+
             unsigned int nodeIDLimVal = uu1 ? unusedNodes.getNumItems() : nodes.getCurrID();
             unsigned int synIDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();
             unsigned int node2IDLimVal = uu3 ? unusedNodes.getNumItems() : nodes.getCurrID();
@@ -870,12 +892,15 @@ void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
 
 
             addNodeToSynapse(nodeID, uu1, synID, uu2, false);
-            addSynapseToNode(synID, uu1, node2ID, uu3, false);
+            addSynapseToNode(synID, uu2, node2ID, uu3, false);
             break;
         }
 
         case 3:
         {
+            if (unusedSynapses.getNumItems() == 0) uu1 = false;
+            if (unusedSynapses.getNumItems() == 0) uu2 = false;
+
             unsigned int synIDLimVal = uu1 ? unusedSynapses.getNumItems() : synapses.getCurrID();
             unsigned int syn2IDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();
 

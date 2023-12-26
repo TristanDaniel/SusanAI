@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <cstdio>
+#include <filesystem>
 
 #include "Trainer.h"
 
@@ -57,6 +59,7 @@ void ControllerTrainer::train() {
                         bestControllers.erase(remove_if(bestControllers.begin(), bestControllers.end(),
                                                         [&minBestController](LemonDrop::Controller *c)
                                                         { return c->getName() == minBestController->getName(); }),bestControllers.end());
+                        remove(("..\\" + minBestController->getName() + ".lsv").c_str());
 
                         minBestController = &*controller;
                         for (auto c : bestControllers) {
@@ -65,6 +68,8 @@ void ControllerTrainer::train() {
                                 minHighestFitness = c->getSavedFitness();
                             }
                         }
+                    } else {
+                        remove(("..\\" + controller->getName() + ".lsv").c_str());
                     }
                 }
 
@@ -75,10 +80,14 @@ void ControllerTrainer::train() {
             }
 
 
+            if (i == (generations - 1)) continue;
+
             int idx = 0;
             for (auto cont : bestControllers) {
                 string saveName = "best_g" + to_string(i-1) + "_" + to_string(cont->getSavedFitness()) + "_" + cont->getName();
-                cont->totalSave(saveName);
+                //cont->totalSave(saveName);
+                filesystem::copy("..\\" + cont->getName() + ".lsv", "..\\" + saveName + ".lsv");
+                remove(("..\\" + cont->getName() + ".lsv").c_str());
 
                 controllers[idx] = new LemonDrop::Controller(cont->getName(), saveName, true, false);
                 //controllers[idx]->resetFitness();
@@ -99,6 +108,7 @@ void ControllerTrainer::train() {
         thread runThreads[genSize];
         for (int j = 0; j < genSize; j++) runThreads[j] = thread(*controllers[j], genLength);
         for (auto & runThread : runThreads) runThread.join();
+
     }
 
     float highestFitness = -10000;
@@ -114,5 +124,6 @@ void ControllerTrainer::train() {
     }
 
     string  bestControllerName = bestController->getName();
-    bestController->totalSave("best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName);
+    filesystem::copy("..\\" + bestControllerName + ".lsv", "..\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + ".lsv");
+    //bestController->totalSave("best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName);
 }

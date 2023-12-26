@@ -63,7 +63,7 @@ Synapses::Synapse* SynapseHandler::getSynapseByID(unsigned int id) {
     return syn == synapses.end() ? getSynapseByCount(id) : *syn;
 }
 
-void Handler::checkID(unsigned int id) { if (id > nextID) nextID = id+1; }
+void Handler::checkID(unsigned int id) { if (id >= nextID) nextID = id+1; }
 
 int Handler::getNumItems() const { return items; }
 
