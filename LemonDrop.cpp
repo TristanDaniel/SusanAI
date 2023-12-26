@@ -22,6 +22,10 @@ Controller::Controller() {
     valueInputs.InitHandler();
     unusedNodes.InitHandler();
 
+    actionGroups.push_back(baseAG1);
+    actionGroups.push_back(baseAG2);
+    actionGroups.push_back(extraAG);
+
     synapses.InitHandler();
     weightedSynapses.InitHandler();
     unusedSynapses.InitHandler();
@@ -87,7 +91,7 @@ Controller::Controller(const std::string &contName, const std::string &fileToLoa
     verboseActionsMode = vaMode;
 
     initController();
-    if (!withoutSaveMode) filesystem::copy("..\\" + fileToLoadFrom + ".lsv", "..\\" + contName + ".lsv");
+    if (!withoutSaveMode) filesystem::copy("..\\" + fileToLoadFrom + ".lsv", "..\\" + contName + ".lsv", filesystem::copy_options::overwrite_existing);
     name = contName;
 
     if (!withoutSaveMode) saveActionToFile("\n");
@@ -247,6 +251,8 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
             nodes.addNode(n);
             unusedNodes.addNode(n);
 
+            extraAG.addNode(dynamic_cast<Nodes::ActionNode *>(n));
+
             saveActionToFile(n->saveNode());
 
             //cout << n->saveNode() << endl;
@@ -401,11 +407,12 @@ bool Controller::addNodeToSynapse(unsigned int nodeID, bool uuNode, unsigned int
 }
 
 void Controller::getAllOutputs() {
-    float highestFiringActionValue = 0;
-    Nodes::ActionNode* actionNode = nullptr;
+    //float highestFiringActionValue = 0;
+    //Nodes::ActionNode* actionNode = nullptr;
+    queue<Nodes::ActionNode*> actionQueue;
     auto start = chrono::high_resolution_clock::now();
 
-    for (Nodes::Node* output : outputs.getNodes()) {
+    /*for (Nodes::Node* output : outputs.getNodes()) {
         if (auto* actionNode1 = dynamic_cast<Nodes::ActionNode *>(output)) {
             float value = actionNode1->getValue();
             if (value > highestFiringActionValue) {
@@ -415,6 +422,15 @@ void Controller::getAllOutputs() {
                 actionNode = actionNode1;
             }
         } else ((Nodes::Output *) output)->getOutput();
+    */
+
+    for (auto ag : actionGroups) {
+        Nodes::ActionNode* actionNode = ag.getActionNode();
+        if (actionNode != nullptr) actionQueue.push(actionNode);
+    }
+
+    for (auto n : outputs.getNodes()) {
+        ((Nodes::Output*)n)->getOutput();
     }
 
     auto stop = chrono::high_resolution_clock::now();
@@ -423,36 +439,43 @@ void Controller::getAllOutputs() {
     calcAvg.addValue(calcTime);
     //cout << (calcAvg.getAverage() / 1000000) << " ms, " << outputs.getNumItems() << endl;
 
-    if (highestFiringActionValue == 0) return;
-    switch (actionNode->getActionType()) {
-        case Flags::ActionFlag::DO_NOTHING:
-            cout << "Doing nothing" << endl;
-            break;
-        case Flags::ActionFlag::ADD_NODE:
-            actionNodeAddNodeFunction(actionNode);
-            turnsSinceStructureChange = 0;
-            break;
-        case Flags::ActionFlag::ADD_SYNAPSE:
-            actionNodeAddSynapseFunction(actionNode);
-            turnsSinceStructureChange = 0;
-            break;
-        case Flags::ActionFlag::MAKE_CONNECTION:
-            actionNodeMakeConnectionFunction(actionNode);
-            turnsSinceStructureChange = 0;
-            break;
-        case Flags::ActionFlag::SET_FLAG_FOR_NODE:
-            actionNodeSetFlagForNodeFunction(actionNode);
-            break;
-        case Flags::ActionFlag::UPDATE_WEIGHT:
-            actionNodeUpdateWeightFunction(actionNode);
-            break;
-        case Flags::ActionFlag::UPDATE_NODE_VALUE:
-            actionNodeUpdateNodeValueFunction(actionNode);
-            break;
+    if (actionQueue.empty()) return;
+    //if (highestFiringActionValue == 0) return;
+    while (!actionQueue.empty()) {
+        Nodes::ActionNode* actionNode = actionQueue.front();
+        actionQueue.pop();
+
+        switch (actionNode->getActionType()) {
+            case Flags::ActionFlag::DO_NOTHING:
+                cout << "Doing nothing" << endl;
+                break;
+            case Flags::ActionFlag::ADD_NODE:
+                actionNodeAddNodeFunction(actionNode);
+                turnsSinceStructureChange = 0;
+                break;
+            case Flags::ActionFlag::ADD_SYNAPSE:
+                actionNodeAddSynapseFunction(actionNode);
+                turnsSinceStructureChange = 0;
+                break;
+            case Flags::ActionFlag::MAKE_CONNECTION:
+                actionNodeMakeConnectionFunction(actionNode);
+                turnsSinceStructureChange = 0;
+                break;
+            case Flags::ActionFlag::SET_FLAG_FOR_NODE:
+                actionNodeSetFlagForNodeFunction(actionNode);
+                break;
+            case Flags::ActionFlag::UPDATE_WEIGHT:
+                actionNodeUpdateWeightFunction(actionNode);
+                break;
+            case Flags::ActionFlag::UPDATE_NODE_VALUE:
+                actionNodeUpdateNodeValueFunction(actionNode);
+                break;
+        }
+
+        lastActionType = (int)actionNode->getActionType();
+        actionTypeAvg.addValue(lastActionType);
     }
 
-    lastActionType = (int)actionNode->getActionType();
-    actionTypeAvg.addValue(lastActionType);
 }
 
 void Controller::loop() {
@@ -467,7 +490,7 @@ void Controller::loop() {
 
     turnsSinceStructureChange++;
 
-    //this_thread::sleep_for(chrono::milliseconds(loopwait));
+    this_thread::sleep_for(chrono::milliseconds(loopwait));
 }
 [[noreturn]] void Controller::mainLoop() {
     DataBits::initTurn();
@@ -481,8 +504,14 @@ void Controller::mainLoop(const int turnLimit) {
         loop();
     }
 
-    std::ofstream saveFile("..\\" + name + "_fitness.txt");
-    saveFile << to_string(fitnessAvg.getAverage());
+    std::ofstream saveFile("..\\" + name + "_data.txt");
+    saveFile << to_string(fitnessAvg.getAverage()) << endl;
+    saveFile << to_string(fitDecTurns) << endl;
+    saveFile << to_string(calcTime) << endl;
+    saveFile << to_string(calcAvg.getAverage()) << endl;
+    saveFile << to_string(lastActionType) << endl;
+    saveFile << to_string(actionTypeAvg.getAverage()) << endl;
+    saveFile << to_string(turnsSinceStructureChange) << endl;
 }
 
 
@@ -514,6 +543,7 @@ void Controller::loadFromFile() {
             string infobit; //thanks logan for the name
 
             while (!ss.eof()) {
+                infobit = "";
                 ss >> infobit;
                 if (infobit == "+n0") {
                     // basic node
@@ -763,6 +793,14 @@ void Controller::initController() {
 //    addSynapseToNode(0, 0);
 
     loadFromFile();
+
+    // load action groups
+    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(138)));
+    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(139)));
+    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(140)));
+    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(141)));
+    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(142)));
+    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(143)));
 }
 
 void Controller::actionNodeAddNodeFunction(Nodes::ActionNode *actionNode) {
@@ -922,7 +960,7 @@ void Controller::generateInitialController() {
             + (nodesPerInputHiddenLayer * baseInputHiddenLayers);
     // output params inputs split layer
     const int nodesToOutputParams = 10;
-    const int nodesToOutputParamsStartID = firstInputHiddenLayerStartID
+    const int nodesToOutputParamsStartID = firstHiddenLayerStartID
             + (nodesPerHiddenLayer * hiddenLayers);
     const int nodesToOutputFiringThreshold = 2;
     const int nodesToOutFireThreshStartID = nodesToOutputParamsStartID + nodesToOutputParams;
@@ -1013,27 +1051,27 @@ void Controller::generateInitialController() {
     //saveActionToFile(doNothingOutput->saveNode());
     //nodes.addNode(doNothingOutput);
     //outputs.addNode(doNothingOutput);
-    Nodes::Node* addNodeOutput = new Nodes::AddNodeNode(nodes.getNextID(), LDRandomFloat());
+    Nodes::Node* addNodeOutput = new Nodes::AddNodeNode(nodes.getNextID(), 0.5);
     saveActionToFile(addNodeOutput->saveNode());
     nodes.addNode(addNodeOutput);
     outputs.addNode(addNodeOutput);
-    Nodes::Node* addSynOutput = new Nodes::AddSynapseNode(nodes.getNextID(), LDRandomFloat());
+    Nodes::Node* addSynOutput = new Nodes::AddSynapseNode(nodes.getNextID(), 0.5);
     saveActionToFile(addSynOutput->saveNode());
     nodes.addNode(addSynOutput);
     outputs.addNode(addSynOutput);
-    Nodes::Node* makeConOutput = new Nodes::MakeConnectionNode(nodes.getNextID(), LDRandomFloat());
+    Nodes::Node* makeConOutput = new Nodes::MakeConnectionNode(nodes.getNextID(), 0.5);
     saveActionToFile(makeConOutput->saveNode());
     nodes.addNode(makeConOutput);
     outputs.addNode(makeConOutput);
-    Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), LDRandomFloat());
+    Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), 0.5);
     saveActionToFile(setFlagOutput->saveNode());
     nodes.addNode(setFlagOutput);
     outputs.addNode(setFlagOutput);
-    Nodes::Node* updateWeightOutput = new Nodes::UpdateWeightNode(nodes.getNextID(), LDRandomFloat());
+    Nodes::Node* updateWeightOutput = new Nodes::UpdateWeightNode(nodes.getNextID(), 0.5);
     saveActionToFile(updateWeightOutput->saveNode());
     nodes.addNode(updateWeightOutput);
     outputs.addNode(updateWeightOutput);
-    Nodes::Node* updateNodeValueOutput = new Nodes::UpdateNodeValueNode(nodes.getNextID(), LDRandomFloat());
+    Nodes::Node* updateNodeValueOutput = new Nodes::UpdateNodeValueNode(nodes.getNextID(), 0.5);
     saveActionToFile(updateNodeValueOutput->saveNode());
     nodes.addNode(updateNodeValueOutput);
     outputs.addNode(updateNodeValueOutput);
@@ -1262,14 +1300,17 @@ void Controller::totalSave(const std::string& fileName) {
     std::ofstream saveFile("..\\" + fileName + ".lsv");
 
     for (auto n : nodes.getNodes()) {
+        if (n->getID() < 11) continue;
         n->totalSave(saveFile);
     }
 
-    saveFile << "\n";
+    saveFile << endl;
 
     for (auto syn : synapses.getSynapses()) {
         syn->totalSave(saveFile);
     }
+
+    saveFile << endl;
 
     saveFile.close();
 }
@@ -1286,11 +1327,46 @@ void Controller::resetFitness() {
 }
 
 float Controller::getSavedFitness() {
-    std::ifstream loadFile("..\\" + name + "_fitness.txt");
+    std::ifstream loadFile("..\\" + name + "_data.txt");
 
     float fit;
     loadFile >> fit;
 
+    loadFile.close();
+
     return fit;
 }
+
+void Controller::loadSavedData() {
+    std::ifstream loadFile("..\\" + name + "_data.txt");
+
+    loadFile >> fitness;
+    prevFitness = fitness;
+    for (int i = 0; i < fitAvgTurns; i++) {
+        fitnessAvg.addValue(fitness);
+    }
+
+    fitnessDelta = 0;
+
+    loadFile >> fitDecTurns;
+    loadFile >> calcTime;
+    long long int calcTimeAvg;
+    loadFile >> calcTimeAvg;
+    for (int i = 0; i < calcAvgTurns; i++) {
+        calcAvg.addValue(calcTimeAvg);
+    }
+
+    loadFile >> lastActionType;
+    int actionAvg;
+    loadFile >> actionAvg;
+    for (int i = 0; i < actionTypeAvgTurns; i++) {
+        actionTypeAvg.addValue(actionAvg);
+    }
+
+    loadFile >> turnsSinceStructureChange;
+
+    loadFile.close();
+}
+
+
 

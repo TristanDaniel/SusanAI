@@ -22,6 +22,9 @@ namespace LemonDrop {
         Handlers::NodeHandler valueInputs;
         Handlers::NodeHandler unusedNodes;
 
+        std::vector<UtilClasses::ActionGroup> actionGroups;
+        UtilClasses::ActionGroup baseAG1, baseAG2, extraAG;
+
         Handlers::SynapseHandler synapses;
         Handlers::SynapseHandler weightedSynapses;
         Handlers::SynapseHandler unusedSynapses;
@@ -123,6 +126,8 @@ namespace LemonDrop {
 
         void resetFitness();
         float getSavedFitness();
+
+        void loadSavedData();
     };
 
 }

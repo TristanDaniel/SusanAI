@@ -1,5 +1,6 @@
 
 #include "Utils.h"
+#include "Nodes.h"
 
 unsigned long long int turn;
 
@@ -26,3 +27,24 @@ float UtilFunctions::LDRandomInt(int min, int max) {
 float UtilFunctions::sigmoid(float val) {
     return 1 / (1 + std::exp(-val));
 }
+
+void UtilClasses::ActionGroup::addNode(Nodes::ActionNode* node) {
+    nodes.push_back(node);
+}
+
+Nodes::ActionNode* UtilClasses::ActionGroup::getActionNode() {
+    float highestValue = 0;
+
+    Nodes::ActionNode* firingNode = nullptr;
+
+    for (auto n : nodes) {
+        float v = n->getValue();
+        if (v > highestValue) {
+            highestValue = v;
+            firingNode = n;
+        }
+    }
+
+    return firingNode;
+}
+

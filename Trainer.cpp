@@ -33,6 +33,7 @@ void ControllerTrainer::train() {
             //LemonDrop::Controller* bestController;
 
             vector<LemonDrop::Controller*> bestControllers;
+            bestControllers.clear();
             int queueSize = genSize - newAgentsPerGen;
 
             for (auto controller : controllers) {
@@ -80,7 +81,8 @@ void ControllerTrainer::train() {
                 cont->totalSave(saveName);
 
                 controllers[idx] = new LemonDrop::Controller(cont->getName(), saveName, true, false);
-                controllers[idx++]->resetFitness();
+                //controllers[idx]->resetFitness();
+                controllers[idx++]->loadSavedData();
                 //cont->totalSave(cont->getName() + "_g" + to_string(i-1));
             }
 

@@ -451,6 +451,8 @@ bool MakeConnectionNode::getUU2() const { return uu2; }
 bool MakeConnectionNode::getUU3() const { return uu3; }
 
 void SetFlagNode::getOutput() {
+    if (value == 0) return;
+
     targetID = targetIDInput ? targetIDInput->getData() : 0;
     flagVal = flagValInput ? (int)(flagValInput->getData() * DataBits::NUM_NODE_FLAGS) % DataBits::NUM_NODE_FLAGS : 0;
 }
@@ -481,6 +483,8 @@ void Node::removeOutputSynapse(Synapses::Synapse *syn) {
 }
 
 void UpdateWeightNode::getOutput() {
+    if (value == 0) return;
+
     targetID = targetIDInput ? abs(targetIDInput->getData()) : 0;
     float unclamppedWeightModifier = weightModifierInput ? weightModifierInput->getData() : 1;
     weightModifier = 2 * UtilFunctions::sigmoid(unclamppedWeightModifier) - 1;
@@ -509,6 +513,8 @@ float UpdateWeightNode::getWeightModifier() const { return weightModifier; }
 bool UpdateWeightNode::replacingWeight() const { return replaceWeight; }
 
 void UpdateNodeValueNode::getOutput() {
+    if (value == 0) return;
+
     targetID = targetIDInput ? abs(targetIDInput->getData()) : 0;
     float unclamppedValueModifier = valueModifierInput ? valueModifierInput->getData() : 1;
     valueModifier = 2 * UtilFunctions::sigmoid(unclamppedValueModifier) - 1;

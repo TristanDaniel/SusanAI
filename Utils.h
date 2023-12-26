@@ -2,6 +2,8 @@
 
 #include <random>
 #include <queue>
+#include <vector>
+//#include "Nodes.h"
 
 namespace Flags {
 
@@ -87,6 +89,10 @@ namespace UtilFunctions {
     float sigmoid(float val);
 }
 
+namespace Nodes {
+    class ActionNode;
+}
+
 namespace UtilClasses {
 
     template <typename T> class RunningAverage {
@@ -111,5 +117,17 @@ namespace UtilClasses {
         float getAverage() {
             return (float)(total / (que.size() ? que.size() : 1));
         }
+    };
+
+    class ActionGroup {
+
+    protected:
+        std::vector<Nodes::ActionNode*> nodes;
+
+    public:
+
+        void addNode(Nodes::ActionNode* node);
+
+        Nodes::ActionNode* getActionNode();
     };
 }
