@@ -1076,27 +1076,27 @@ void Controller::generateInitialController() {
     //saveActionToFile(doNothingOutput->saveNode());
     //nodes.addNode(doNothingOutput);
     //outputs.addNode(doNothingOutput);
-    Nodes::Node* addNodeOutput = new Nodes::AddNodeNode(nodes.getNextID(), 0.5);
+    Nodes::Node* addNodeOutput = new Nodes::AddNodeNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(addNodeOutput->saveNode());
     nodes.addNode(addNodeOutput);
     outputs.addNode(addNodeOutput);
-    Nodes::Node* addSynOutput = new Nodes::AddSynapseNode(nodes.getNextID(), 0.5);
+    Nodes::Node* addSynOutput = new Nodes::AddSynapseNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(addSynOutput->saveNode());
     nodes.addNode(addSynOutput);
     outputs.addNode(addSynOutput);
-    Nodes::Node* makeConOutput = new Nodes::MakeConnectionNode(nodes.getNextID(), 0.5);
+    Nodes::Node* makeConOutput = new Nodes::MakeConnectionNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(makeConOutput->saveNode());
     nodes.addNode(makeConOutput);
     outputs.addNode(makeConOutput);
-    Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), 0.5);
+    Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(setFlagOutput->saveNode());
     nodes.addNode(setFlagOutput);
     outputs.addNode(setFlagOutput);
-    Nodes::Node* updateWeightOutput = new Nodes::UpdateWeightNode(nodes.getNextID(), 0.5);
+    Nodes::Node* updateWeightOutput = new Nodes::UpdateWeightNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(updateWeightOutput->saveNode());
     nodes.addNode(updateWeightOutput);
     outputs.addNode(updateWeightOutput);
-    Nodes::Node* updateNodeValueOutput = new Nodes::UpdateNodeValueNode(nodes.getNextID(), 0.5);
+    Nodes::Node* updateNodeValueOutput = new Nodes::UpdateNodeValueNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(updateNodeValueOutput->saveNode());
     nodes.addNode(updateNodeValueOutput);
     outputs.addNode(updateNodeValueOutput);
@@ -1153,19 +1153,26 @@ void Controller::generateInitialController() {
 }
 
 float Controller::getUnusedPartFitnessImpact() {
+    float impactValue;
+
     auto uunodes = (float)unusedNodes.getNumItems();
-    auto uusyns = (float)unusedSynapses.getNumItems();
+    auto uusyns = (float)unusedSynapses.getNumItems() * 1.5f;
+    float totalUU = uunodes + uusyns;
     auto totalNetSize = (float)nodes.getNumItems() + (float)synapses.getNumItems();
 
-    float scaledUURatio = 1 + (uunodes + (2 * (uusyns))) / totalNetSize;
+    float uuuRatio = totalUU / totalNetSize;
 
-    float impactValue = (-1 * (0.1f * totalNetSize) - ((2 * uusyns) + uunodes))
-                        + ((pow(scaledUURatio, uunodes) / totalNetSize)
-                            + (pow(scaledUURatio, uusyns) / totalNetSize));
+    impactValue = uuuRatio * prevFitness;
+
+//    float scaledUURatio = 1 + (uunodes + (2 * (uusyns))) / totalNetSize;
+//
+//    float impactValue = (-1 * (0.1f * totalNetSize) - ((2 * uusyns) + uunodes))
+//                        + ((pow(scaledUURatio, uunodes) / totalNetSize)
+//                            + (pow(scaledUURatio, uusyns) / totalNetSize));
 
     //cout << "UU impact: " << min(max(0.0f, impactValue), 100.0f) << endl;
 
-    return min(max(0.0f, impactValue), 1000.0f);
+    return impactValue;
 }
 
 float Controller::getCalcTimeFitnessImpact() {
@@ -1173,14 +1180,12 @@ float Controller::getCalcTimeFitnessImpact() {
     float currCalcPerOutput = (float)calcTime / (float)outputs.getNumItems();
     float avgToCurrCalcRatio = avgCalcPerOutput / currCalcPerOutput;
 
-    // take nanosecons per second, scale to nanoseconds per cycle delay, divide by total outputs to get optimal time usage
-    // subtract actual time per output to determine if suboptimal performance is reached. divide by 10mil for scaling
-    float largeAvgCalcTimePunishment = (((1000000000.0f * ((float)loopwait / 1000)) / (float)outputs.getNumItems()) - (avgCalcPerOutput * ((float)loopwait / 1000))) / 10000000;
+    float scaledLoopWait = 1000000.0f * (float)loopwait;
+    float maxCalcPerOutput = scaledLoopWait / (float)outputs.getNumItems();
 
-    // avgCalcPerOutput scales so that lower calcTime compared to average is good. largeAvg punishment increases percentage
-    // when the avg time is lower than the time needed to make calculations take as long as the cycle delay. out of 100
-    // to get a basic percentage and then a multiplyer. lower avg and bigger improvement is good
-    float impactValue = (100 * avgToCurrCalcRatio + largeAvgCalcTimePunishment) / 100;
+    float impactValue = currCalcPerOutput > maxCalcPerOutput ? -10000 : 100;
+
+    impactValue += (100 * avgToCurrCalcRatio) - 100;
 
     //cout << "CT impact: " << impactValue << endl;
 
@@ -1188,10 +1193,10 @@ float Controller::getCalcTimeFitnessImpact() {
 }
 
 float Controller::getFitnessFitnessImpact() {
-    float fitnessCurrToAvgRatio = prevFitness / ((bool)fitnessAvg.getAverage() ? fitnessAvg.getAverage() : 1);
-    float decTurnsScaled = (float)fitDecTurns / ((float)log(fitDecTurns + 0.272) + 1);
+    float impactValue = prevFitness / 2;
+    if (prevFitness > fitnessAvg.getAverage()) impactValue += prevFitness / 4;
 
-    float impactValue = decTurnsScaled * fitnessCurrToAvgRatio;
+    impactValue += (float)fitDecTurns;
 
     //cout << "FF impact: " << impactValue << endl;
 
@@ -1199,19 +1204,20 @@ float Controller::getFitnessFitnessImpact() {
 }
 
 float Controller::getTurnAndStructureFitnessImpact() {
-    float impactValue = 30;
+    float impactValue = prevFitness / 4;
 
-    if (lastActionType + 0.5 >= actionTypeAvg.getAverage()
-        && lastActionType - 0.5 <= actionTypeAvg.getAverage()) impactValue -= 100;
+    if (lastActionType + 0.25 >= actionTypeAvg.getAverage()
+        && lastActionType - 0.25 <= actionTypeAvg.getAverage()) impactValue -= 5000 * (float)turnsSinceStructureChange;
 
-    impactValue -= (float)turnsSinceStructureChange;
+    impactValue -= turnsSinceStructureChange > 50 ? 100000 : (float)turnsSinceStructureChange * 10;
 
     return impactValue;
 }
 
 float Controller::calcFitness() {
-    fitness = 100 * getCalcTimeFitnessImpact() + getFitnessFitnessImpact()
-            - getUnusedPartFitnessImpact() - getTurnAndStructureFitnessImpact();
+    fitness = getFitnessFitnessImpact() + getTurnAndStructureFitnessImpact()
+                - getUnusedPartFitnessImpact() + getCalcTimeFitnessImpact();
+
     fitDecTurns = fitness >= prevFitness ? fitDecTurns + 1 : 1;
     fitnessDelta = fitness - prevFitness;
     prevFitness = fitness;
@@ -1227,17 +1233,17 @@ void Controller::setMetricInputs() {
     unusedSynsInput->setValue(UtilFunctions::sigmoid((float)unusedSynapses.getNumItems()));
     networkSizeInput->setValue(UtilFunctions::sigmoid((float)nodes.getNumItems() + (float)synapses.getNumItems()));
 
-    fitnessInput->setValue(calcFitness());
-    fitnessDeltaInput->setValue(fitnessDelta);
-    fitnessAvgInput->setValue(fitnessAvg.getAverage());
-    turnsSinceFitnessDecInput->setValue((float)fitDecTurns);
+    fitnessInput->setValue(UtilFunctions::sigmoid(calcFitness()));
+    fitnessDeltaInput->setValue(UtilFunctions::sigmoid(fitnessDelta));
+    fitnessAvgInput->setValue(UtilFunctions::sigmoid(fitnessAvg.getAverage()));
+    turnsSinceFitnessDecInput->setValue(UtilFunctions::sigmoid((float)fitDecTurns));
 
-    outputCalcTimeInput->setValue((float)calcTime / 1000000.0f);
+    outputCalcTimeInput->setValue(UtilFunctions::sigmoid((float)calcTime / 1000000.0f));
 
-    lastActionTypeInput->setValue((float)lastActionType);
-    actionTypeAgvInput->setValue(actionTypeAvg.getAverage());
+    lastActionTypeInput->setValue((float)lastActionType / (float)DataBits::NUM_ACTION_TYPES);
+    actionTypeAgvInput->setValue(actionTypeAvg.getAverage() / (float)DataBits::NUM_ACTION_TYPES);
 
-    turnsSinceStructureChangeInput->setValue((float)turnsSinceStructureChange);
+    turnsSinceStructureChangeInput->setValue(UtilFunctions::sigmoid((float)turnsSinceStructureChange));
 }
 
 void Controller::actionNodeUpdateWeightFunction(Nodes::ActionNode *actionNode) {

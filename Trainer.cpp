@@ -60,6 +60,7 @@ void ControllerTrainer::train() {
                                                         [&minBestController](LemonDrop::Controller *c)
                                                         { return c->getName() == minBestController->getName(); }),bestControllers.end());
                         remove(("..\\" + minBestController->getName() + ".lsv").c_str());
+                        remove(("..\\" + minBestController->getName() + "_data.txt").c_str());
 
                         minBestController = &*controller;
                         for (auto c : bestControllers) {
@@ -70,6 +71,8 @@ void ControllerTrainer::train() {
                         }
                     } else {
                         remove(("..\\" + controller->getName() + ".lsv").c_str());
+                        remove(("..\\" + controller->getName() + "_data.txt").c_str());
+
                     }
                 }
 
