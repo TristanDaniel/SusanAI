@@ -115,7 +115,7 @@ namespace UtilClasses {
             }
         }
         float getAverage() {
-            return (float)(total / (que.size() ? que.size() : 1));
+            return ((float)total / (que.size() ? que.size() : 1));
         }
     };
 

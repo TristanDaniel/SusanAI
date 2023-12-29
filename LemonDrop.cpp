@@ -80,6 +80,7 @@ Controller::Controller(const std::string& contName, const bool generateNew, cons
         generateInitialController();
     } else {
         initController();
+        loadSavedData();
     }
 
     baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(138)));
@@ -89,7 +90,7 @@ Controller::Controller(const std::string& contName, const bool generateNew, cons
     baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(142)));
     baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(143)));
 
-    saveActionToFile("\n");
+    if (!withoutSaveMode) saveActionToFile("\n");
 }
 
 Controller::Controller(const std::string &contName, const std::string &fileToLoadFrom, const bool wsMode, const bool vaMode) : Controller() {
@@ -98,6 +99,8 @@ Controller::Controller(const std::string &contName, const std::string &fileToLoa
     verboseActionsMode = vaMode;
 
     initController();
+    loadSavedData();
+
     if (!withoutSaveMode) filesystem::copy("..\\" + fileToLoadFrom + ".lsv", "..\\" + contName + ".lsv", filesystem::copy_options::overwrite_existing);
     name = contName;
 
@@ -373,6 +376,10 @@ bool Controller::addSynapseToNode(unsigned int synID, bool uuSyn, unsigned int n
     bool nodeuu = node->isUnused();
 
     Nodes::Node* prevSynOutput = synapse->getOutput();
+    if ((Nodes::ActionNode*)prevSynOutput) {
+        brokeActionNode = true;
+        return false;
+    }
 
     node->addSynapse(synapse);
 
@@ -426,6 +433,8 @@ bool Controller::addNodeToSynapse(unsigned int nodeID, bool uuNode, unsigned int
 void Controller::getAllOutputs() {
     //float highestFiringActionValue = 0;
     //Nodes::ActionNode* actionNode = nullptr;
+    brokeActionNode = false;
+
     queue<Nodes::ActionNode*> actionQueue;
     auto start = chrono::high_resolution_clock::now();
 
@@ -462,7 +471,9 @@ void Controller::getAllOutputs() {
         Nodes::ActionNode* actionNode = actionQueue.front();
         actionQueue.pop();
 
-        switch (actionNode->getActionType()) {
+        Flags::ActionFlag actionType = actionNode->getActionType();
+
+        switch (actionType) {
             case Flags::ActionFlag::DO_NOTHING:
                 cout << "Doing nothing" << endl;
                 break;
@@ -475,7 +486,7 @@ void Controller::getAllOutputs() {
                 turnsSinceStructureChange = 0;
                 break;
             case Flags::ActionFlag::MAKE_CONNECTION:
-                actionNodeMakeConnectionFunction(actionNode);
+                if (!actionNodeMakeConnectionFunction(actionNode)) actionType = Flags::ActionFlag::DO_NOTHING;
                 turnsSinceStructureChange = 0;
                 break;
             case Flags::ActionFlag::SET_FLAG_FOR_NODE:
@@ -489,7 +500,7 @@ void Controller::getAllOutputs() {
                 break;
         }
 
-        lastActionType = (int)actionNode->getActionType();
+        lastActionType = (int)actionType;
         actionTypeAvg.addValue(lastActionType);
     }
 
@@ -715,6 +726,10 @@ void Controller::loadFromFile() {
                     ss >> id1;
                     ss >> id2;
 
+//                    if (id2 > 140) {
+//                        cout << "aaaaaaaaaa" << endl;
+//                    }
+
                     addSynapseToNode(id1, id2, true);
                 } else if (infobit == ">ns") {
                     int id1, id2;
@@ -810,9 +825,6 @@ void Controller::initController() {
 //    addSynapseToNode(0, 0);
 
     loadFromFile();
-
-    // load action groups
-
 }
 
 void Controller::actionNodeAddNodeFunction(Nodes::ActionNode *actionNode) {
@@ -834,7 +846,7 @@ void Controller::actionNodeAddSynapseFunction(Nodes::ActionNode *actionNode) {
     newSynapse(synType, params);
 }
 
-void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode) {
+bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode) {
     auto* node = dynamic_cast<Nodes::MakeConnectionNode*>(actionNode);
 
     int conType = node->getConnectionType();
@@ -845,6 +857,8 @@ void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
     bool uu1 = node->getUU1();
     bool uu2 = node->getUU2();
     bool uu3 = node->getUU3();
+
+    bool success = true;
 
     switch (conType) {
         case 0:
@@ -873,7 +887,7 @@ void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
             unsigned int nodeID = (unsigned int)(id2 * (float)nodeIDLimVal) % nodeIDLimVal;
             unsigned int synID = (unsigned int)(id1 * (float)synIDLimVal) % synIDLimVal;
 
-            addSynapseToNode(synID, uu1, nodeID, uu2, false);
+            success = addSynapseToNode(synID, uu1, nodeID, uu2, false);
             break;
         }
         case 2:
@@ -892,7 +906,7 @@ void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
 
 
             addNodeToSynapse(nodeID, uu1, synID, uu2, false);
-            addSynapseToNode(synID, uu2, node2ID, uu3, false);
+            success = addSynapseToNode(synID, uu2, node2ID, uu3, false);
             break;
         }
 
@@ -908,7 +922,8 @@ void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
             unsigned int syn2ID = (unsigned int)(id2 * (float)syn2IDLimVal) % syn2IDLimVal;
 
 
-            auto* n = new Nodes::NotInputNode(0);
+            auto* n = new Nodes::NotInputNode(nodes.getNextID());
+            nodes.addNode(n);
 
             Synapses::Synapse* s1 = uu1 ? unusedSynapses.getSynapseByCount(synID)
                     : synapses.getSynapseByID(synID);
@@ -929,6 +944,8 @@ void Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         default:
             break;
     }
+
+    return success;
 }
 
 void Controller::actionNodeSetFlagForNodeFunction(Nodes::ActionNode *actionNode) {
@@ -1156,13 +1173,15 @@ float Controller::getUnusedPartFitnessImpact() {
     float impactValue;
 
     auto uunodes = (float)unusedNodes.getNumItems();
-    auto uusyns = (float)unusedSynapses.getNumItems() * 1.5f;
+    auto uusyns = (float)unusedSynapses.getNumItems();
     float totalUU = uunodes + uusyns;
     auto totalNetSize = (float)nodes.getNumItems() + (float)synapses.getNumItems();
 
     float uuuRatio = totalUU / totalNetSize;
 
-    impactValue = uuuRatio * prevFitness;
+    impactValue = uuuRatio * (prevFitness > 10000 ? prevFitness : 10000);
+
+    if (uuuRatio >= 0.1) impactValue += 10000000;
 
 //    float scaledUURatio = 1 + (uunodes + (2 * (uusyns))) / totalNetSize;
 //
@@ -1170,12 +1189,14 @@ float Controller::getUnusedPartFitnessImpact() {
 //                        + ((pow(scaledUURatio, uunodes) / totalNetSize)
 //                            + (pow(scaledUURatio, uusyns) / totalNetSize));
 
-    //cout << "UU impact: " << min(max(0.0f, impactValue), 100.0f) << endl;
+    if (verboseActionsMode) cout << "UU impact: " << impactValue << endl;
 
     return impactValue;
 }
 
 float Controller::getCalcTimeFitnessImpact() {
+    float baseImpact = fitnessAvg.getAverage() / 16;
+
     float avgCalcPerOutput = calcAvg.getAverage() / (float)outputs.getNumItems();
     float currCalcPerOutput = (float)calcTime / (float)outputs.getNumItems();
     float avgToCurrCalcRatio = avgCalcPerOutput / currCalcPerOutput;
@@ -1183,40 +1204,46 @@ float Controller::getCalcTimeFitnessImpact() {
     float scaledLoopWait = 1000000.0f * (float)loopwait;
     float maxCalcPerOutput = scaledLoopWait / (float)outputs.getNumItems();
 
-    float impactValue = currCalcPerOutput > maxCalcPerOutput ? -10000 : 100;
+    float impactValue = currCalcPerOutput > maxCalcPerOutput ? -100 * baseImpact: baseImpact;
 
-    impactValue += (100 * avgToCurrCalcRatio) - 100;
+    impactValue += (baseImpact * avgToCurrCalcRatio) - baseImpact;
 
-    //cout << "CT impact: " << impactValue << endl;
+    if (verboseActionsMode) cout << "CT impact: " << impactValue << endl;
 
     return impactValue;
 }
 
 float Controller::getFitnessFitnessImpact() {
-    float impactValue = prevFitness / 2;
-    if (prevFitness > fitnessAvg.getAverage()) impactValue += prevFitness / 4;
+    float impactValue = prevFitness * 0.9f;
+    if (prevFitness > fitnessAvg.getAverage()) impactValue += prevFitness / 8;
 
     impactValue += (float)fitDecTurns;
 
-    //cout << "FF impact: " << impactValue << endl;
+    if (verboseActionsMode) cout << "FF impact: " << impactValue << endl;
 
     return impactValue;
 }
 
 float Controller::getTurnAndStructureFitnessImpact() {
-    float impactValue = prevFitness / 4;
+    float baseImpact = fitnessAvg.getAverage() / 16;
+
+    float impactValue = prevFitness / 32;
 
     if (lastActionType + 0.25 >= actionTypeAvg.getAverage()
-        && lastActionType - 0.25 <= actionTypeAvg.getAverage()) impactValue -= 5000 * (float)turnsSinceStructureChange;
+        && lastActionType - 0.25 <= actionTypeAvg.getAverage()) impactValue += 50 * baseImpact * (float)turnsSinceStructureChange;
 
-    impactValue -= turnsSinceStructureChange > 50 ? 100000 : (float)turnsSinceStructureChange * 10;
+    impactValue += turnsSinceStructureChange > 50 ? 1000 * baseImpact : (float)turnsSinceStructureChange * baseImpact / 10;
+
+    if (brokeActionNode) impactValue += 1000 * baseImpact;
+
+    if (verboseActionsMode) cout << "TS impact: " << impactValue << endl;
 
     return impactValue;
 }
 
 float Controller::calcFitness() {
-    fitness = getFitnessFitnessImpact() + getTurnAndStructureFitnessImpact()
-                - getUnusedPartFitnessImpact() + getCalcTimeFitnessImpact();
+    fitness = getFitnessFitnessImpact() - getTurnAndStructureFitnessImpact()
+                - getUnusedPartFitnessImpact() + getCalcTimeFitnessImpact() - (prevFitness / 16);
 
     fitDecTurns = fitness >= prevFitness ? fitDecTurns + 1 : 1;
     fitnessDelta = fitness - prevFitness;
@@ -1337,8 +1364,14 @@ void Controller::totalSave(const std::string& fileName) {
 
     saveFile << endl;
 
+    int num = 0;
     for (auto syn : synapses.getSynapses()) {
         syn->totalSave(saveFile);
+        num++;
+        if (num == 200) {
+            saveFile << endl;
+            num = 0;
+        }
     }
 
     saveFile << endl;
@@ -1381,17 +1414,17 @@ void Controller::loadSavedData() {
 
     loadFile >> fitDecTurns;
     loadFile >> calcTime;
-    long long int calcTimeAvg;
+    float calcTimeAvg;
     loadFile >> calcTimeAvg;
     for (int i = 0; i < calcAvgTurns; i++) {
-        calcAvg.addValue(calcTimeAvg);
+        calcAvg.addValue((long long)calcTimeAvg);
     }
 
     loadFile >> lastActionType;
-    int actionAvg;
+    float actionAvg;
     loadFile >> actionAvg;
     for (int i = 0; i < actionTypeAvgTurns; i++) {
-        actionTypeAvg.addValue(actionAvg);
+        actionTypeAvg.addValue((int)actionAvg);
     }
 
     loadFile >> turnsSinceStructureChange;

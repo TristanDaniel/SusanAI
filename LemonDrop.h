@@ -55,6 +55,8 @@ namespace LemonDrop {
         UtilClasses::RunningAverage<int> actionTypeAvg;
         int turnsSinceStructureChange;
 
+        bool brokeActionNode;
+
 
 
         bool newNode(unsigned int type, ParamPackages::NodeParams params);
@@ -78,7 +80,7 @@ namespace LemonDrop {
 
         void actionNodeAddNodeFunction(Nodes::ActionNode* actionNode);
         void actionNodeAddSynapseFunction(Nodes::ActionNode* actionNode);
-        void actionNodeMakeConnectionFunction(Nodes::ActionNode* actionNode);
+        bool actionNodeMakeConnectionFunction(Nodes::ActionNode* actionNode);
         void actionNodeSetFlagForNodeFunction(Nodes::ActionNode* actionNode);
         void actionNodeUpdateWeightFunction(Nodes::ActionNode* actionNode);
         void actionNodeUpdateNodeValueFunction(Nodes::ActionNode* actionNode);

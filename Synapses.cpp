@@ -55,17 +55,17 @@ Nodes::Node* Synapse::getOutput() const { return output; }
 Nodes::Node* Synapse::getInput() const { return input; }
 
 void Synapse::totalSave(std::ofstream& saveFile) {
-    if (totalSaving || lastTotalSave == DataBits::getTurn()) return;
+    //if (totalSaving || lastTotalSave == DataBits::getTurn()) return;
 
-    totalSaving = true;
+    //totalSaving = true;
 
     saveFile << saveSynapse();
 
     if (input != nullptr) saveFile << ">ns " + to_string(input->getID()) + " " + to_string(id) + " ";
     if (output != nullptr) saveFile << ">sn " + to_string(id) + " " + to_string(output->getID()) + " ";
 
-    lastTotalSave = DataBits::getTurn();
-    totalSaving = false;
+    //lastTotalSave = DataBits::getTurn();
+    //totalSaving = false;
 }
 
 

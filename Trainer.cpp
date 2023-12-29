@@ -83,18 +83,20 @@ void ControllerTrainer::train() {
             }
 
 
-            if (i == (generations - 1)) continue;
+            //if (i == (generations - 1)) continue;
 
             int idx = 0;
             for (auto cont : bestControllers) {
                 string saveName = "best_g" + to_string(i-1) + "_" + to_string(cont->getSavedFitness()) + "_" + cont->getName();
                 //cont->totalSave(saveName);
                 filesystem::copy("..\\" + cont->getName() + ".lsv", "..\\" + saveName + ".lsv");
-                remove(("..\\" + cont->getName() + ".lsv").c_str());
 
-                controllers[idx] = new LemonDrop::Controller(cont->getName(), saveName, true, false);
+                controllers[idx++] = new LemonDrop::Controller(cont->getName(), false, true, false);
+
+                remove(("..\\" + cont->getName() + ".lsv").c_str());
+                remove(("..\\" + cont->getName() + "_data.txt").c_str());
                 //controllers[idx]->resetFitness();
-                controllers[idx++]->loadSavedData();
+                //controllers[idx++]->loadSavedData();
                 //cont->totalSave(cont->getName() + "_g" + to_string(i-1));
             }
 

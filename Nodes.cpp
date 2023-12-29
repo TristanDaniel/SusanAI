@@ -349,34 +349,42 @@ ParamPackages::SynapseParams AddSynapseNode::getParams() {
 void AddNodeNode::addSynapse(Synapses::Synapse *syn) {
     if (!nodeTypeInput) {
         nodeTypeInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!cycleFlagInput) {
         cycleFlagInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!valueInput) {
         valueInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!modeInput) {
         modeInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!minInput) {
         minInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!maxInput) {
         maxInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!thresholdInput) {
         thresholdInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!thresholdInput) {
         thresholdInput = syn;
+        syn->setOutput(this);
         return;
     }
 
@@ -386,10 +394,12 @@ void AddNodeNode::addSynapse(Synapses::Synapse *syn) {
 void AddSynapseNode::addSynapse(Synapses::Synapse *syn) {
     if (!synTypeInput) {
         synTypeInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!weightInput) {
         weightInput = syn;
+        syn->setOutput(this);
         return;
     }
 
@@ -412,30 +422,37 @@ void MakeConnectionNode::getOutput() {
 void MakeConnectionNode::addSynapse(Synapses::Synapse *syn) {
     if (!connectionTypeInput) {
         connectionTypeInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!id1Input) {
         id1Input = syn;
+        syn->setOutput(this);
         return;
     }
     if (!uu1Input){
         uu1Input = syn;
+        syn->setOutput(this);
         return;
     }
     if (!id2Input) {
         id2Input = syn;
+        syn->setOutput(this);
         return;
     }
     if (!uu2Input){
         uu2Input = syn;
+        syn->setOutput(this);
         return;
     }
     if (!id3Input) {
         id3Input = syn;
+        syn->setOutput(this);
         return;
     }
     if (!uu3Input){
         uu3Input = syn;
+        syn->setOutput(this);
         return;
     }
 
@@ -460,10 +477,12 @@ void SetFlagNode::getOutput() {
 void SetFlagNode::addSynapse(Synapses::Synapse *syn) {
     if (!targetIDInput) {
         targetIDInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!flagValInput) {
         flagValInput = syn;
+        syn->setOutput(this);
         return;
     }
 
@@ -494,14 +513,17 @@ void UpdateWeightNode::getOutput() {
 void UpdateWeightNode::addSynapse(Synapses::Synapse *syn) {
     if (!targetIDInput) {
         targetIDInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!weightModifierInput) {
         weightModifierInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!replaceWeightInput) {
         replaceWeightInput = syn;
+        syn->setOutput(this);
         return;
     }
 
@@ -524,14 +546,17 @@ void UpdateNodeValueNode::getOutput() {
 void UpdateNodeValueNode::addSynapse(Synapses::Synapse *syn) {
     if (!targetIDInput) {
         targetIDInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!valueModifierInput) {
         valueModifierInput = syn;
+        syn->setOutput(this);
         return;
     }
     if (!replaceValueInput) {
         replaceValueInput = syn;
+        syn->setOutput(this);
         return;
     }
 
