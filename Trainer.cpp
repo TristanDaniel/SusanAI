@@ -14,6 +14,8 @@ using namespace std;
 void ControllerTrainer::train() {
     cout << "Train start" << endl;
 
+    // make better. batches of 50 turns, assess, remake failing networks
+
     LemonDrop::Controller* controllers[genSize];
     std::string baseName = "controller";
 
