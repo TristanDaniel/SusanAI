@@ -26,7 +26,6 @@ Node::Node(unsigned int i) : Structures::Part(i), turn(0), value(0), lastValue(0
 Input::Input(unsigned int i) : Node(i) {}
 
 float NotInputNode::getValue() {
-
     // If the map isn't empty, it means we reached this point in a cycle
     if (!synCheckStatus.empty()) {
         unordered_map<unsigned int, char> nm;
@@ -46,8 +45,14 @@ float NotInputNode::getValue() {
         //cout << "Net turn: " << DataBits::getTurn() << " Node turn: " << turn << endl;
         lastValue = value;
         return value;
-    } else {
-        turn = DataBits::getTurn();
+    }
+
+    turn = DataBits::getTurn();
+
+    if (UtilFunctions::LDRandomFloat() < dropoutChance) {
+        lastValue = value;
+        value = 0;
+        return value;
     }
 
     for (auto syn : synapses) {
@@ -131,9 +136,23 @@ void Node::setFlags(const std::vector<Flags::NodeFlag>& f) {
 }
 void Node::addFlag(Flags::NodeFlag f) {
     switch (f) {
+        case Flags::NodeFlag::NONE_FLAG:
         case NodeFlag::IGNORE_ON_CYCLE:
         case NodeFlag::PARTIAL_ON_CYCLE:
             cycleFlag = f;
+            break;
+        case NodeFlag::NO_DROPOUT:
+        case Flags::NodeFlag::DROPOUT_20:
+            dropoutFlag = f;
+            dropoutChance = 0.2;
+            break;
+        case Flags::NodeFlag::DROPOUT_50:
+            dropoutFlag = f;
+            dropoutChance = 0.5;
+            break;
+        case Flags::NodeFlag::DROPOUT_80:
+            dropoutFlag = f;
+            dropoutChance = 0.8;
             break;
         default:
             break;
@@ -144,6 +163,12 @@ void Node::removeFlag(Flags::NodeFlag f) {
         case NodeFlag::IGNORE_ON_CYCLE:
         case NodeFlag::PARTIAL_ON_CYCLE:
             cycleFlag = Flags::NodeFlag::NONE_FLAG;
+            break;
+        case Flags::NodeFlag::DROPOUT_20:
+        case Flags::NodeFlag::DROPOUT_50:
+        case Flags::NodeFlag::DROPOUT_80:
+            dropoutFlag = Flags::NodeFlag::NO_DROPOUT;
+            dropoutChance = 0;
             break;
         default:
             break;
@@ -200,7 +225,7 @@ void Output::getOutput() {
 string Node::getFlagListString() {
     string s;
 
-    s += to_string((int)cycleFlag) + " ";
+    s += to_string((int)cycleFlag) + " " + to_string((int)dropoutFlag) + " ";
 
     return s;
 }

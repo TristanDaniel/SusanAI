@@ -30,7 +30,9 @@ namespace Nodes {
         std::unordered_map<unsigned int, char> synCheckStatus;
 
         Flags::NodeFlag cycleFlag = Flags::NodeFlag::NONE_FLAG;
-        //std::vector<Flags::NodeFlag> flags;
+
+        Flags::NodeFlag dropoutFlag = Flags::NodeFlag::NO_DROPOUT;
+        float dropoutChance;
 
         bool totalSaving = false;
         unsigned long long int lastTotalSave = 0;

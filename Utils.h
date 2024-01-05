@@ -10,7 +10,11 @@ namespace Flags {
     enum class NodeFlag {
         NONE_FLAG,
         IGNORE_ON_CYCLE,
-        PARTIAL_ON_CYCLE
+        PARTIAL_ON_CYCLE,
+        NO_DROPOUT,
+        DROPOUT_20,
+        DROPOUT_50,
+        DROPOUT_80
     };
 
     enum class ActionFlag {

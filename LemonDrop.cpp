@@ -561,7 +561,7 @@ void Controller::loadFromFile() {
     if (loadFile.is_open()) {
         string line;
 
-        int id, cycleFlag;
+        int id, cycleFlag, dropoutFlag;
         Nodes::Node* n;
         Synapses::Synapse* syn;
 
@@ -577,10 +577,12 @@ void Controller::loadFromFile() {
                     // basic node
                     ss >> id;
                     ss >> cycleFlag;
+                    ss >> dropoutFlag;
 
                     n = new Nodes::NotInputNode(id);
 
                     n->addFlag(static_cast<Flags::NodeFlag>(cycleFlag));
+                    n->addFlag(static_cast<Flags::NodeFlag>(dropoutFlag));
 
                     nodes.addNode(n);
                     unusedNodes.addNode(n);
@@ -589,6 +591,7 @@ void Controller::loadFromFile() {
                     // input
                     ss >> id;
                     ss >> cycleFlag;
+                    ss >> dropoutFlag;
 
                     float val;
                     ss >> val;
@@ -605,6 +608,7 @@ void Controller::loadFromFile() {
                     // Random input
                     int mode;
                     float min, max;
+                    ss >> dropoutFlag;
 
                     ss >> id;
                     ss >> cycleFlag;
@@ -621,10 +625,12 @@ void Controller::loadFromFile() {
                     // Output
                     ss >> id;
                     ss >> cycleFlag;
+                    ss >> dropoutFlag;
 
                     n = new Nodes::Output(id);
 
                     n->addFlag(static_cast<Flags::NodeFlag>(cycleFlag));
+                    n->addFlag(static_cast<Flags::NodeFlag>(dropoutFlag));
 
                     nodes.addNode(n);
                     outputs.addNode(n);
@@ -635,6 +641,7 @@ void Controller::loadFromFile() {
 
                     ss >> id;
                     ss >> cycleFlag;
+                    ss >> dropoutFlag;
 
                     float threshold;
                     ss >> threshold;
@@ -642,6 +649,7 @@ void Controller::loadFromFile() {
                     n = new Nodes::FireableNode(id, threshold);
 
                     n->addFlag(static_cast<Flags::NodeFlag>(cycleFlag));
+                    n->addFlag(static_cast<Flags::NodeFlag>(dropoutFlag));
 
                     nodes.addNode(n);
                     unusedNodes.addNode(n);
@@ -652,6 +660,7 @@ void Controller::loadFromFile() {
 
                     ss >> id;
                     ss >> cycleFlag;
+                    ss >> dropoutFlag;
 
                     float threshold;
                     ss >> threshold;
@@ -1170,7 +1179,7 @@ void Controller::generateInitialController() {
 }
 
 float Controller::getUnusedPartFitnessImpact() {
-    float impactValue;
+    float impactValue = abs(prevFitness) / 8;
 
     auto uunodes = (float)unusedNodes.getNumItems();
     auto uusyns = (float)unusedSynapses.getNumItems();
@@ -1179,9 +1188,9 @@ float Controller::getUnusedPartFitnessImpact() {
 
     float uuuRatio = totalUU / totalNetSize;
 
-    impactValue = uuuRatio * (prevFitness > 10000 ? prevFitness : 10000);
+    impactValue *= uuuRatio;
 
-    if (uuuRatio >= 0.1) impactValue += 10000000;
+    if (uuuRatio >= 0.1) impactValue += 100000 * impactValue;
 
 //    float scaledUURatio = 1 + (uunodes + (2 * (uusyns))) / totalNetSize;
 //
@@ -1195,11 +1204,12 @@ float Controller::getUnusedPartFitnessImpact() {
 }
 
 float Controller::getCalcTimeFitnessImpact() {
-    float baseImpact = fitnessAvg.getAverage() / 16;
+    float baseImpact = abs(fitnessAvg.getAverage()) / 16;
 
     float avgCalcPerOutput = calcAvg.getAverage() / (float)outputs.getNumItems();
     float currCalcPerOutput = (float)calcTime / (float)outputs.getNumItems();
     float avgToCurrCalcRatio = avgCalcPerOutput / currCalcPerOutput;
+    if (avgToCurrCalcRatio > 6) avgToCurrCalcRatio = 6;
 
     float scaledLoopWait = 1000000.0f * (float)loopwait;
     float maxCalcPerOutput = scaledLoopWait / (float)outputs.getNumItems();
@@ -1214,8 +1224,8 @@ float Controller::getCalcTimeFitnessImpact() {
 }
 
 float Controller::getFitnessFitnessImpact() {
-    float impactValue = prevFitness * 0.9f;
-    if (prevFitness > fitnessAvg.getAverage()) impactValue += prevFitness / 8;
+    float impactValue = prevFitness - (abs(prevFitness) * 0.4f);
+    if (prevFitness > fitnessAvg.getAverage()) impactValue += abs(prevFitness) / 8;
 
     impactValue += (float)fitDecTurns;
 
@@ -1225,9 +1235,9 @@ float Controller::getFitnessFitnessImpact() {
 }
 
 float Controller::getTurnAndStructureFitnessImpact() {
-    float baseImpact = fitnessAvg.getAverage() / 16;
+    float baseImpact = abs(fitnessAvg.getAverage()) / 16;
 
-    float impactValue = prevFitness / 32;
+    float impactValue = abs(prevFitness) / 32;
 
     if (lastActionType + 0.25 >= actionTypeAvg.getAverage()
         && lastActionType - 0.25 <= actionTypeAvg.getAverage()) impactValue += 50 * baseImpact * (float)turnsSinceStructureChange;
@@ -1242,8 +1252,11 @@ float Controller::getTurnAndStructureFitnessImpact() {
 }
 
 float Controller::calcFitness() {
-    fitness = getFitnessFitnessImpact() - getTurnAndStructureFitnessImpact()
-                - getUnusedPartFitnessImpact() + getCalcTimeFitnessImpact() - (prevFitness / 16);
+    fitness = getFitnessFitnessImpact();
+    fitness -= getTurnAndStructureFitnessImpact();
+    fitness -= getUnusedPartFitnessImpact();
+    fitness += getCalcTimeFitnessImpact();
+    fitness += (abs(prevFitness) / 4);
 
     fitDecTurns = fitness >= prevFitness ? fitDecTurns + 1 : 1;
     fitnessDelta = fitness - prevFitness;
@@ -1312,6 +1325,7 @@ void Controller::makeStandardLayer(const int layerStartID, const int nodesInLaye
 
     for (int nodeID = layerStartID; nodeID < layerStartID + nodesInLayer; nodeID++) {
         node = new Nodes::NotInputNode(nodeID);
+        node->addFlag(Flags::NodeFlag::DROPOUT_20);
 
         saveActionToFile(node->saveNode());
 
