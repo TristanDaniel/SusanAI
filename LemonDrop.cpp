@@ -64,6 +64,7 @@ Controller::Controller() {
     fitDecTurns = 1;
     lastActionType = 0;
     turnsSinceStructureChange = 0;
+    timesDoneNothing = 0;
 }
 
 Controller::Controller(const std::string& contName, const bool generateNew, const bool wsMode, const bool vaMode) : Controller() {
@@ -453,6 +454,7 @@ void Controller::getAllOutputs() {
     for (auto ag : actionGroups) {
         Nodes::ActionNode* actionNode = ag->getActionNode();
         if (actionNode != nullptr) actionQueue.push(actionNode);
+        else actionQueue.push(new Nodes::ActionNode(0, 0, 0));
     }
 
     for (auto n : outputs.getNodes()) {
@@ -480,7 +482,7 @@ void Controller::getAllOutputs() {
 
         switch (actionType) {
             case Flags::ActionFlag::DO_NOTHING:
-                cout << "Doing nothing" << endl;
+                if (verboseActionsMode) cout << "Doing nothing" << endl;
                 break;
             case Flags::ActionFlag::ADD_NODE:
                 actionNodeAddNodeFunction(actionNode);
@@ -505,9 +507,17 @@ void Controller::getAllOutputs() {
                 break;
         }
 
-        lastActionType = (int)actionType;
-        actionTypeAvg.addValue(lastActionType);
+        lastActionType1 = lastActionType2;
+        lastActionType2 = lastActionType3;
+        lastActionType3 = lastActionType4;
+        lastActionType4 = lastActionType5;
+        lastActionType5 = lastActionType6;
+        lastActionType6 = (int)actionType;
+        actionTypeAvg.addValue(lastActionType6);
     }
+
+    ag1repeatTurns = lastActionType1 == lastActionType4 ? ag1repeatTurns + 1 : 0;
+    ag2repeatTurns = lastActionType2 == lastActionType5 ? ag2repeatTurns + 1 : 0;
 
 }
 
@@ -515,6 +525,7 @@ void Controller::loop() {
     if (verboseActionsMode) cout << "loop" << endl;
 
     DataBits::incrTurn();
+    cout << to_string(DataBits::getTurn()) << endl;
 
     setMetricInputs();
     if (verboseActionsMode) cout << "F: " << fitness << endl;
@@ -538,13 +549,14 @@ void Controller::mainLoop(const int turnLimit) {
     }
 
     std::ofstream saveFile("..\\" + name + "_data.txt");
-    saveFile << to_string(fitnessAvg.getAverage()) << endl;
+    saveFile << to_string(fitness) << endl;
     saveFile << to_string(fitDecTurns) << endl;
     saveFile << to_string(calcTime) << endl;
     saveFile << to_string(calcAvg.getAverage()) << endl;
     saveFile << to_string(lastActionType) << endl;
     saveFile << to_string(actionTypeAvg.getAverage()) << endl;
     saveFile << to_string(turnsSinceStructureChange) << endl;
+    saveFile << to_string(timesDoneNothing) << endl;
 }
 
 
@@ -1097,6 +1109,9 @@ void Controller::generateInitialController() {
     saveActionToFile("\n");
 
     makeStandardLayer(firingThresholdNodesStartID, firingThresholdNodes);
+    for (int i = firingThresholdNodesStartID; i < firstHiddenLayerStartID + firingThresholdNodes; i++) {
+        nodes.getNodeByID(i)->addFlag(Flags::NodeFlag::NO_DROPOUT);
+    }
     saveActionToFile("\n");
     connectTwoLayers(nodesToOutFireThreshStartID, nodesToOutputFiringThreshold, firingThresholdNodesStartID, firingThresholdNodes);
 
@@ -1107,27 +1122,27 @@ void Controller::generateInitialController() {
     //saveActionToFile(doNothingOutput->saveNode());
     //nodes.addNode(doNothingOutput);
     //outputs.addNode(doNothingOutput);
-    Nodes::Node* addNodeOutput = new Nodes::AddNodeNode(nodes.getNextID(), LDRandomFloat());
+    Nodes::Node* addNodeOutput = new Nodes::AddNodeNode(nodes.getNextID(), 0.5);
     saveActionToFile(addNodeOutput->saveNode());
     nodes.addNode(addNodeOutput);
     outputs.addNode(addNodeOutput);
-    Nodes::Node* addSynOutput = new Nodes::AddSynapseNode(nodes.getNextID(), LDRandomFloat());
+    Nodes::Node* addSynOutput = new Nodes::AddSynapseNode(nodes.getNextID(), 0.5);
     saveActionToFile(addSynOutput->saveNode());
     nodes.addNode(addSynOutput);
     outputs.addNode(addSynOutput);
-    Nodes::Node* makeConOutput = new Nodes::MakeConnectionNode(nodes.getNextID(), LDRandomFloat());
+    Nodes::Node* makeConOutput = new Nodes::MakeConnectionNode(nodes.getNextID(), 0.5);
     saveActionToFile(makeConOutput->saveNode());
     nodes.addNode(makeConOutput);
     outputs.addNode(makeConOutput);
-    Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), LDRandomFloat());
+    Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), 0.5);
     saveActionToFile(setFlagOutput->saveNode());
     nodes.addNode(setFlagOutput);
     outputs.addNode(setFlagOutput);
-    Nodes::Node* updateWeightOutput = new Nodes::UpdateWeightNode(nodes.getNextID(), LDRandomFloat());
+    Nodes::Node* updateWeightOutput = new Nodes::UpdateWeightNode(nodes.getNextID(), 0.5);
     saveActionToFile(updateWeightOutput->saveNode());
     nodes.addNode(updateWeightOutput);
     outputs.addNode(updateWeightOutput);
-    Nodes::Node* updateNodeValueOutput = new Nodes::UpdateNodeValueNode(nodes.getNextID(), LDRandomFloat());
+    Nodes::Node* updateNodeValueOutput = new Nodes::UpdateNodeValueNode(nodes.getNextID(), 0.5);
     saveActionToFile(updateNodeValueOutput->saveNode());
     nodes.addNode(updateNodeValueOutput);
     outputs.addNode(updateNodeValueOutput);
@@ -1257,13 +1272,32 @@ float Controller::getTurnAndStructureFitnessImpact() {
 }
 
 float Controller::calcFitness() {
+    int netSize = nodes.getNumItems() + synapses.getNumItems();
+    int totalUU = unusedNodes.getNumItems() + unusedSynapses.getNumItems();
+
     fitness = 100 + ((float)nodes.getNumItems() / 4) + ((float)synapses.getNumItems() / 2);
     fitness -= (float)(unusedNodes.getNumItems() + unusedSynapses.getNumItems())
-                * (float)turnsSinceStructureChange * 10;
-    if (lastActionType + 0.25 >= actionTypeAvg.getAverage()
-        && lastActionType - 0.25 <= actionTypeAvg.getAverage()) fitness -= 10 * (float)turnsSinceStructureChange;
+                * ((float)turnsSinceStructureChange + 1)
+                * (((float)totalUU / (float)netSize) > 0.05 ? 100.f : 10);
+    if (lastActionType4 + 0.25 >= actionTypeAvg.getAverage()
+        && lastActionType4 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 100 * (float)turnsSinceStructureChange;
+    if (lastActionType5 + 0.25 >= actionTypeAvg.getAverage()
+        && lastActionType5 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 100 * (float)turnsSinceStructureChange;
     fitness += (float)fitDecTurns;
     fitness -= (float)fitIncrTurns * 10;
+    if (lastActionType4 == 0) {
+        timesDoneNothing++;
+        fitness -= 200 * (float)timesDoneNothing;
+    }
+    if (lastActionType5 == 0) {
+        timesDoneNothing++;
+        fitness -= 200 * (float)timesDoneNothing;
+    }
+    fitness -= 100 * (float)ag1repeatTurns;
+    fitness -= 100 * (float)ag2repeatTurns;
+
+
+    //fitness = max(0.f, (float)fitness);
 
     //fitness = getFitnessFitnessImpact();
     //fitness -= getTurnAndStructureFitnessImpact();
@@ -1294,7 +1328,9 @@ void Controller::setMetricInputs() {
 
     outputCalcTimeInput->setValue(UtilFunctions::sigmoid((float)calcTime / 1000000.0f));
 
-    lastActionTypeInput->setValue((float)lastActionType / (float)DataBits::NUM_ACTION_TYPES);
+    int encodedActionSeries = (lastActionType4 * 2) + (lastActionType5 * 3);
+    lastActionTypeInput->setValue((float)encodedActionSeries / 26);
+    //lastActionTypeInput->setValue((float)lastActionType / (float)DataBits::NUM_ACTION_TYPES);
     actionTypeAgvInput->setValue(actionTypeAvg.getAverage() / (float)DataBits::NUM_ACTION_TYPES);
 
     turnsSinceStructureChangeInput->setValue(UtilFunctions::sigmoid((float)turnsSinceStructureChange));

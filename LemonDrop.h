@@ -50,10 +50,13 @@ namespace LemonDrop {
         UtilClasses::RunningAverage<float> fitnessAvg;
         int calcAvgTurns = 10;
         UtilClasses::RunningAverage<long long int> calcAvg;
-        int lastActionType;
+        int lastActionType, lastActionType1, lastActionType2, lastActionType3,
+            lastActionType4, lastActionType5, lastActionType6;
         int actionTypeAvgTurns = 10;
         UtilClasses::RunningAverage<int> actionTypeAvg;
         int turnsSinceStructureChange;
+        int ag1repeatTurns, ag2repeatTurns;
+        int timesDoneNothing;
 
         bool brokeActionNode;
 
