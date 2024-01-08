@@ -44,7 +44,7 @@ namespace LemonDrop {
         int loopwait = 500;
 
         float fitness, prevFitness, fitnessDelta;
-        int fitDecTurns;
+        int fitDecTurns, fitIncrTurns;
         long long int calcTime{};
         int fitAvgTurns = 10;
         UtilClasses::RunningAverage<float> fitnessAvg;

@@ -85,8 +85,8 @@ Controller::Controller(const std::string& contName, const bool generateNew, cons
 
     baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(138)));
     baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(139)));
-    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(140)));
-    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(141)));
+    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(140)));
+    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(141)));
     baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(142)));
     baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(143)));
 
@@ -465,7 +465,12 @@ void Controller::getAllOutputs() {
     calcAvg.addValue(calcTime);
     //cout << (calcAvg.getAverage() / 1000000) << " ms, " << outputs.getNumItems() << endl;
 
-    if (actionQueue.empty()) return;
+    if (actionQueue.empty()) {
+        lastActionType = 0;
+        actionTypeAvg.addValue(lastActionType);
+
+        return;
+    }
     //if (highestFiringActionValue == 0) return;
     while (!actionQueue.empty()) {
         Nodes::ActionNode* actionNode = actionQueue.front();
@@ -1252,13 +1257,22 @@ float Controller::getTurnAndStructureFitnessImpact() {
 }
 
 float Controller::calcFitness() {
-    fitness = getFitnessFitnessImpact();
-    fitness -= getTurnAndStructureFitnessImpact();
-    fitness -= getUnusedPartFitnessImpact();
-    fitness += getCalcTimeFitnessImpact();
-    fitness += (abs(prevFitness) / 4);
+    fitness = 100 + ((float)nodes.getNumItems() / 4) + ((float)synapses.getNumItems() / 2);
+    fitness -= (float)(unusedNodes.getNumItems() + unusedSynapses.getNumItems())
+                * (float)turnsSinceStructureChange * 10;
+    if (lastActionType + 0.25 >= actionTypeAvg.getAverage()
+        && lastActionType - 0.25 <= actionTypeAvg.getAverage()) fitness -= 10 * (float)turnsSinceStructureChange;
+    fitness += (float)fitDecTurns;
+    fitness -= (float)fitIncrTurns * 10;
+
+    //fitness = getFitnessFitnessImpact();
+    //fitness -= getTurnAndStructureFitnessImpact();
+    //fitness -= getUnusedPartFitnessImpact();
+    //fitness += getCalcTimeFitnessImpact();
+    //fitness += (abs(prevFitness) / 4);
 
     fitDecTurns = fitness >= prevFitness ? fitDecTurns + 1 : 1;
+    fitIncrTurns = fitness <= prevFitness ? fitIncrTurns + 1 : 0;
     fitnessDelta = fitness - prevFitness;
     prevFitness = fitness;
     fitnessAvg.addValue(fitness);
