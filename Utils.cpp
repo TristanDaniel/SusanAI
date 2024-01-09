@@ -2,11 +2,9 @@
 #include "Utils.h"
 #include "Nodes.h"
 
-unsigned long long int turn;
-
-void DataBits::initTurn() { turn = 0; }
-void DataBits::incrTurn() { turn++; }
-unsigned long long int DataBits::getTurn() { return turn; }
+void UtilClasses::TurnTracker::initTurn() { turn = 0; }
+void UtilClasses::TurnTracker::incrTurn() { turn++; }
+unsigned long long int UtilClasses::TurnTracker::getTurn() { return turn; }
 
 std::random_device rd;
 std::mt19937 mt(rd());
@@ -32,13 +30,13 @@ void UtilClasses::ActionGroup::addNode(Nodes::ActionNode* node) {
     nodes.push_back(node);
 }
 
-Nodes::ActionNode* UtilClasses::ActionGroup::getActionNode() {
+Nodes::ActionNode* UtilClasses::ActionGroup::getActionNode(unsigned long long int curTurn) {
     float highestValue = 0;
 
     Nodes::ActionNode* firingNode = nullptr;
 
     for (auto n : nodes) {
-        float v = n->getValue();
+        float v = n->getValue(curTurn);
         if (v > highestValue) {
             highestValue = v;
             firingNode = n;

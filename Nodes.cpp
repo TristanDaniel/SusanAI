@@ -25,7 +25,7 @@ using Flags::NodeFlag;
 Node::Node(unsigned int i) : Structures::Part(i), turn(0), value(0), lastValue(0) {}
 Input::Input(unsigned int i) : Node(i) {}
 
-float NotInputNode::getValue() {
+float NotInputNode::getValue(unsigned long long int curTurn) {
     // If the map isn't empty, it means we reached this point in a cycle
     if (!synCheckStatus.empty()) {
         unordered_map<unsigned int, char> nm;
@@ -41,13 +41,13 @@ float NotInputNode::getValue() {
     // this initiates a clean value check,
     // meaning all synapses are assumed to be unchecked.
 
-    if (turn == DataBits::getTurn()) {
+    if (turn == curTurn) {
         //cout << "Net turn: " << DataBits::getTurn() << " Node turn: " << turn << endl;
         lastValue = value;
         return value;
     }
 
-    turn = DataBits::getTurn();
+    turn = curTurn;
 
     if (UtilFunctions::LDRandomFloat() < dropoutChance) {
         lastValue = value;
@@ -64,7 +64,7 @@ float NotInputNode::getValue() {
 
 	for (auto& syn : synapses) {
         synCheckStatus[syn->getID()] = 'v';
-        value += syn->getData();
+        value += syn->getData(curTurn);
         synCheckStatus[syn->getID()] = 'c';
 	}
 
@@ -89,7 +89,7 @@ float NotInputNode::getValueInLoop(unordered_map<unsigned int, char> statChecks)
             for (auto& syn : synapses) {
                 if (synCheckStatus[syn->getID()] == 'u') {
                     synCheckStatus[syn->getID()] = 'v';
-                    tempVal += syn->getData();
+                    tempVal += syn->getData(turn);
                     synCheckStatus[syn->getID()] = 'c';
                 }
             }
@@ -101,9 +101,9 @@ float NotInputNode::getValueInLoop(unordered_map<unsigned int, char> statChecks)
 
 float Node::getLastValue() const { return lastValue; }
 
-float Input::getValue() { return value; }
+float Input::getValue(unsigned long long int curTurn) { return value; }
 
-float RandomInput::getValue() {
+float RandomInput::getValue(unsigned long long int curTurn) {
 	switch (mode)
 	{
 	case 0:
@@ -217,8 +217,8 @@ RandomInput::RandomInput(unsigned int i, int m, float min, float max) : Input(i)
 	}
 }
 
-void Output::getOutput() {
-	value = getValue();
+void Output::getOutput(unsigned long long int curTurn) {
+	value = getValue(curTurn);
 	if (value) cout << "Output " << getID() << ": " << value << endl;
 }
 
@@ -257,7 +257,7 @@ string NotInputNode::saveNode() {
 }
 
 string Input::saveNode() {
-    return "+n1 " + to_string(getID()) + " " + getFlagListString() + to_string(getValue()) + " ";
+    return "+n1 " + to_string(getID()) + " " + getFlagListString() + to_string(getValue(turn)) + " ";
 }
 
 string RandomInput::saveNode() {
@@ -277,8 +277,8 @@ bool FireableNode::checkFire() {
     return sigmoidValue >= fireThreshold;
 }
 
-float FireableNode::getValue() {
-    NotInputNode::getValue();
+float FireableNode::getValue(unsigned long long int curTurn) {
+    NotInputNode::getValue(curTurn);
 
     if (!checkFire()) {
         value = 0;
@@ -304,8 +304,8 @@ ActionNode::ActionNode(unsigned int i, float t, int type) : Output(i), Fireable(
 
 Flags::ActionFlag ActionNode::getActionType() { return actionType; }
 
-float ActionNode::getValue() {
-    NotInputNode::getValue();
+float ActionNode::getValue(unsigned long long int curTurn) {
+    NotInputNode::getValue(curTurn);
 
     if (!checkFire()) {
         value = 0;
@@ -320,17 +320,17 @@ string ActionNode::saveNode() {
             + to_string(fireThreshold) + " " + to_string((int)actionType) + " ";
 }
 
-void AddNodeNode::getOutput() {
+void AddNodeNode::getOutput(unsigned long long int curTurn) {
     if (value == 0) return;
 
-    nodeType = nodeTypeInput ? (int)(abs(nodeTypeInput->getData()) * DataBits::NUM_NODE_TYPES) % DataBits::NUM_NODE_TYPES : 0;
-    nodeCycleFlag = cycleFlagInput ? (NodeFlag)((int)(cycleFlagInput->getData() * 3) % 3) : NodeFlag::PARTIAL_ON_CYCLE;
-    nodeValue = valueInput ? valueInput->getData() : 0;
-    mode = modeInput ? (int)(modeInput->getData() * 5) % 5 : 0;
-    min = minInput ? minInput->getData() : 0;
-    max = maxInput ? maxInput->getData() : 0;
-    thresholdValue = thresholdInput ? 1 / (1 + exp(-1 * thresholdInput->getData())) : 0.5f;
-    actionTypeValue = actionTypeInput ? (int)(abs(actionTypeInput->getData()) * DataBits::NUM_ACTION_TYPES) % DataBits::NUM_ACTION_TYPES : 0;
+    nodeType = nodeTypeInput ? (int)(abs(nodeTypeInput->getData(curTurn)) * DataBits::NUM_NODE_TYPES) % DataBits::NUM_NODE_TYPES : 0;
+    nodeCycleFlag = cycleFlagInput ? (NodeFlag)((int)(cycleFlagInput->getData(curTurn) * 3) % 3) : NodeFlag::PARTIAL_ON_CYCLE;
+    nodeValue = valueInput ? valueInput->getData(curTurn) : 0;
+    mode = modeInput ? (int)(modeInput->getData(curTurn) * 5) % 5 : 0;
+    min = minInput ? minInput->getData(curTurn) : 0;
+    max = maxInput ? maxInput->getData(curTurn) : 0;
+    thresholdValue = thresholdInput ? 1 / (1 + exp(-1 * thresholdInput->getData(curTurn))) : 0.5f;
+    actionTypeValue = actionTypeInput ? (int)(abs(actionTypeInput->getData(curTurn)) * DataBits::NUM_ACTION_TYPES) % DataBits::NUM_ACTION_TYPES : 0;
 }
 
 //string AddNodeNode::saveNode() {
@@ -354,11 +354,11 @@ ParamPackages::NodeParams AddNodeNode::getParams() {
     return params;
 }
 
-void AddSynapseNode::getOutput() {
+void AddSynapseNode::getOutput(unsigned long long int curTurn) {
     if (value == 0) return;
 
-    synType = synTypeInput ? (int)(synTypeInput->getData() * DataBits::NUM_SYN_TYPES) % DataBits::NUM_SYN_TYPES : 0;
-    weight = weightInput ? weightInput->getData() : 0;
+    synType = synTypeInput ? (int)(synTypeInput->getData(curTurn) * DataBits::NUM_SYN_TYPES) % DataBits::NUM_SYN_TYPES : 0;
+    weight = weightInput ? weightInput->getData(curTurn) : 0;
 }
 
 int AddSynapseNode::getSynType() const { return synType; }
@@ -431,17 +431,17 @@ void AddSynapseNode::addSynapse(Synapses::Synapse *syn) {
     Node::addSynapse(syn);
 }
 
-void MakeConnectionNode::getOutput() {
+void MakeConnectionNode::getOutput(unsigned long long int curTurn) {
     if (value == 0) return;
 
     connectionType = connectionTypeInput ?
-            (int)(connectionTypeInput->getData() * DataBits::NUM_CONN_TYPES) % DataBits::NUM_CONN_TYPES : 0;
-    id1 = id1Input ? id1Input->getData() : 0;
-    uu1 = uu1Input != nullptr && uu1Input->getData() >= 0;
-    id2 = id2Input ? id2Input->getData() : 0;
-    uu2 = uu2Input != nullptr && uu2Input->getData() >= 0;
-    id3 = (connectionType == 2 && id3Input) ? id3Input->getData() : 0;
-    uu3 = uu3Input != nullptr && uu3Input->getData() >= 0;
+            (int)(connectionTypeInput->getData(curTurn) * DataBits::NUM_CONN_TYPES) % DataBits::NUM_CONN_TYPES : 0;
+    id1 = id1Input ? id1Input->getData(curTurn) : 0;
+    uu1 = uu1Input != nullptr && uu1Input->getData(curTurn) >= 0;
+    id2 = id2Input ? id2Input->getData(curTurn) : 0;
+    uu2 = uu2Input != nullptr && uu2Input->getData(curTurn) >= 0;
+    id3 = (connectionType == 2 && id3Input) ? id3Input->getData(curTurn) : 0;
+    uu3 = uu3Input != nullptr && uu3Input->getData(curTurn) >= 0;
 }
 
 void MakeConnectionNode::addSynapse(Synapses::Synapse *syn) {
@@ -492,11 +492,11 @@ bool MakeConnectionNode::getUU1() const { return uu1; }
 bool MakeConnectionNode::getUU2() const { return uu2; }
 bool MakeConnectionNode::getUU3() const { return uu3; }
 
-void SetFlagNode::getOutput() {
+void SetFlagNode::getOutput(unsigned long long int curTurn) {
     if (value == 0) return;
 
-    targetID = targetIDInput ? targetIDInput->getData() : 0;
-    flagVal = flagValInput ? (int)(flagValInput->getData() * DataBits::NUM_NODE_FLAGS) % DataBits::NUM_NODE_FLAGS : 0;
+    targetID = targetIDInput ? targetIDInput->getData(curTurn) : 0;
+    flagVal = flagValInput ? (int)(flagValInput->getData(curTurn) * DataBits::NUM_NODE_FLAGS) % DataBits::NUM_NODE_FLAGS : 0;
 }
 
 void SetFlagNode::addSynapse(Synapses::Synapse *syn) {
@@ -526,13 +526,13 @@ void Node::removeOutputSynapse(Synapses::Synapse *syn) {
     outputs.erase(remove(outputs.begin(), outputs.end(), syn), outputs.end());
 }
 
-void UpdateWeightNode::getOutput() {
+void UpdateWeightNode::getOutput(unsigned long long int curTurn) {
     if (value == 0) return;
 
-    targetID = targetIDInput ? abs(targetIDInput->getData()) : 0;
-    float unclamppedWeightModifier = weightModifierInput ? weightModifierInput->getData() : 1;
+    targetID = targetIDInput ? abs(targetIDInput->getData(curTurn)) : 0;
+    float unclamppedWeightModifier = weightModifierInput ? weightModifierInput->getData(curTurn) : 1;
     weightModifier = 2 * UtilFunctions::sigmoid(unclamppedWeightModifier) - 1;
-    replaceWeight = replaceWeightInput != nullptr && (replaceWeightInput->getData() <= 0);
+    replaceWeight = replaceWeightInput != nullptr && (replaceWeightInput->getData(curTurn) <= 0);
 }
 
 void UpdateWeightNode::addSynapse(Synapses::Synapse *syn) {
@@ -559,13 +559,13 @@ float UpdateWeightNode::getTargetID() const { return targetID; }
 float UpdateWeightNode::getWeightModifier() const { return weightModifier; }
 bool UpdateWeightNode::replacingWeight() const { return replaceWeight; }
 
-void UpdateNodeValueNode::getOutput() {
+void UpdateNodeValueNode::getOutput(unsigned long long int curTurn) {
     if (value == 0) return;
 
-    targetID = targetIDInput ? abs(targetIDInput->getData()) : 0;
-    float unclamppedValueModifier = valueModifierInput ? valueModifierInput->getData() : 1;
+    targetID = targetIDInput ? abs(targetIDInput->getData(curTurn)) : 0;
+    float unclamppedValueModifier = valueModifierInput ? valueModifierInput->getData(curTurn) : 1;
     valueModifier = 2 * UtilFunctions::sigmoid(unclamppedValueModifier) - 1;
-    replaceValue = replaceValueInput != nullptr && (replaceValueInput->getData() <= 0);
+    replaceValue = replaceValueInput != nullptr && (replaceValueInput->getData(curTurn) <= 0);
 }
 
 void UpdateNodeValueNode::addSynapse(Synapses::Synapse *syn) {

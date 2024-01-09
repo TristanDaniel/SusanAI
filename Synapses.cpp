@@ -13,12 +13,12 @@ WeightedSynapse::WeightedSynapse(unsigned int i, float w) : weight(w)  { id = i;
 WeightedSynapse::WeightedSynapse(unsigned int i, Nodes::Node* inNode, float w) : weight(w) { id = i; input = inNode; }
 
 
-float PassthroughSynapse::getData() {
-    return input ? input->getValue() : 0;
+float PassthroughSynapse::getData(unsigned long long int curTurn) {
+    return input ? input->getValue(curTurn) : 0;
 }
 
-float WeightedSynapse::getData() {
-	return input ? input->getValue() * weight : 0;
+float WeightedSynapse::getData(unsigned long long int curTurn) {
+	return input ? input->getValue(curTurn) * weight : 0;
 }
 
 

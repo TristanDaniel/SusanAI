@@ -78,10 +78,6 @@ namespace DataBits {
 
     static const int NUM_FLAG_TARGET_TYPES = 0;
     static const int NUM_NODE_FLAGS = 3;
-
-    void initTurn();
-    void incrTurn();
-    unsigned long long int getTurn();
 }
 
 namespace UtilFunctions {
@@ -132,6 +128,18 @@ namespace UtilClasses {
 
         void addNode(Nodes::ActionNode* node);
 
-        Nodes::ActionNode* getActionNode();
+        Nodes::ActionNode* getActionNode(unsigned long long int curTurn);
+    };
+
+    class TurnTracker {
+
+    private:
+        unsigned long long int turn;
+
+    public:
+        void initTurn();
+        void incrTurn();
+        unsigned long long int getTurn();
+
     };
 }

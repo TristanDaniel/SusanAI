@@ -43,6 +43,8 @@ namespace LemonDrop {
 
         int loopwait = 500;
 
+        int turn;
+
         float fitness, prevFitness, fitnessDelta;
         int fitDecTurns, fitIncrTurns;
         long long int calcTime{};

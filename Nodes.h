@@ -44,7 +44,7 @@ namespace Nodes {
 		Node()= default;
 		explicit Node(unsigned int i);
 
-		virtual float getValue() = 0;
+		virtual float getValue(unsigned long long int curTurn) = 0;
 		void setValue(float v);
 
         void setFlags(const std::vector<Flags::NodeFlag>& f);
@@ -70,7 +70,7 @@ namespace Nodes {
 	public:
         explicit NotInputNode(unsigned int i) : Node(i) {};
 
-		float getValue() override;
+		float getValue(unsigned long long int curTurn) override;
         float getValueInLoop(std::unordered_map<unsigned int, char> statChecks) override;
 
         std::string saveNode() override;
@@ -81,7 +81,7 @@ namespace Nodes {
 	public:
         explicit Input(unsigned int i);
 
-		float getValue() override;
+		float getValue(unsigned long long int curTurn) override;
         float getValueInLoop(std::unordered_map<unsigned int, char> statChecks) override;
 
         std::string saveNode() override;
@@ -120,7 +120,7 @@ namespace Nodes {
 		RandomInput(unsigned int i, int m);
 		RandomInput(unsigned int i, int m, float min, float max);
 
-		float getValue() override;
+		float getValue(unsigned long long int curTurn) override;
         float getValueInLoop(std::unordered_map<unsigned int, char> statChecks) override;
 
         std::string saveNode() override;
@@ -132,7 +132,7 @@ namespace Nodes {
 
         explicit Output(unsigned int i) : NotInputNode(i) {}
 
-		virtual void getOutput();
+		virtual void getOutput(unsigned long long int curTurn);
 
         std::string saveNode() override;
 	};
@@ -159,7 +159,7 @@ namespace Nodes {
     public:
         FireableNode(unsigned int i, float t) : Nodes::NotInputNode(i), Nodes::Fireable(t) {}
 
-        float getValue() override;
+        float getValue(unsigned long long int curTurn) override;
 
         std::string  saveNode() override;
 
@@ -178,7 +178,7 @@ namespace Nodes {
 
         Flags::ActionFlag getActionType();
 
-        float getValue() override;
+        float getValue(unsigned long long int curTurn) override;
 
         std::string  saveNode() override;
 
@@ -204,7 +204,7 @@ namespace Nodes {
 
         AddNodeNode(unsigned int i, float t) : ActionNode(i, t, 1) {}
 
-        void getOutput() override;
+        void getOutput(unsigned long long int curTurn) override;
 
         void addSynapse(Synapses::Synapse* syn) override;
 
@@ -227,7 +227,7 @@ namespace Nodes {
     public:
         AddSynapseNode(unsigned int i, float t) : ActionNode(i, t, 2) {}
 
-        void getOutput() override;
+        void getOutput(unsigned long long int curTurn) override;
 
         void addSynapse(Synapses::Synapse* syn) override;
 
@@ -253,7 +253,7 @@ namespace Nodes {
     public:
         MakeConnectionNode(unsigned int i, float t) : ActionNode(i, t, 3) {}
 
-        void getOutput() override;
+        void getOutput(unsigned long long int curTurn) override;
 
         void addSynapse(Synapses::Synapse* syn) override;
 
@@ -279,7 +279,7 @@ namespace Nodes {
     public:
         SetFlagNode(unsigned int i, float t) : ActionNode(i, t, 4) {}
 
-        void getOutput() override;
+        void getOutput(unsigned long long int curTurn) override;
 
         void addSynapse(Synapses::Synapse* syn) override;
 
@@ -300,7 +300,7 @@ namespace Nodes {
     public:
         UpdateWeightNode(unsigned int i, float t) : ActionNode(i, t, 5) {}
 
-        void getOutput() override;
+        void getOutput(unsigned long long int curTurn) override;
 
         void addSynapse(Synapses::Synapse* syn) override;
 
@@ -323,7 +323,7 @@ namespace Nodes {
     public:
         UpdateNodeValueNode(unsigned int i, float t) : ActionNode(i, t, 6) {}
 
-        void getOutput() override;
+        void getOutput(unsigned long long int curTurn) override;
 
         void addSynapse(Synapses::Synapse* syn) override;
 

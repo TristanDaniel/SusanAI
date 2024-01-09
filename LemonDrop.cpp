@@ -452,13 +452,13 @@ void Controller::getAllOutputs() {
     */
 
     for (auto ag : actionGroups) {
-        Nodes::ActionNode* actionNode = ag->getActionNode();
+        Nodes::ActionNode* actionNode = ag->getActionNode(turn);
         if (actionNode != nullptr) actionQueue.push(actionNode);
         else actionQueue.push(new Nodes::ActionNode(0, 0, 0));
     }
 
     for (auto n : outputs.getNodes()) {
-        ((Nodes::Output*)n)->getOutput();
+        ((Nodes::Output*)n)->getOutput(turn);
     }
 
     auto stop = chrono::high_resolution_clock::now();
@@ -524,8 +524,8 @@ void Controller::getAllOutputs() {
 void Controller::loop() {
     if (verboseActionsMode) cout << "loop" << endl;
 
-    DataBits::incrTurn();
-    cout << to_string(DataBits::getTurn()) << endl;
+    turn++;
+    //cout << to_string(turn) << endl;
 
     setMetricInputs();
     if (verboseActionsMode) cout << "F: " << fitness << endl;
@@ -534,17 +534,19 @@ void Controller::loop() {
 
     turnsSinceStructureChange++;
 
+    turn++;
+
     //this_thread::sleep_for(chrono::milliseconds(loopwait));
 }
 [[noreturn]] void Controller::mainLoop() {
-    DataBits::initTurn();
+    turn = 0;
     while (true) {
         loop();
     }
 }
 void Controller::mainLoop(const int turnLimit) {
-    DataBits::initTurn();
-    while (DataBits::getTurn() < turnLimit) {
+    turn = 0;
+    while (turn < turnLimit) {
         loop();
     }
 
@@ -1287,17 +1289,17 @@ float Controller::calcFitness() {
     fitness -= (float)fitIncrTurns * 10;
     if (lastActionType4 == 0) {
         timesDoneNothing++;
-        fitness -= 200 * (float)timesDoneNothing;
+        fitness -= 20 * (float)timesDoneNothing;
     }
     if (lastActionType5 == 0) {
         timesDoneNothing++;
-        fitness -= 200 * (float)timesDoneNothing;
+        fitness -= 20 * (float)timesDoneNothing;
     }
     fitness -= 100 * (float)ag1repeatTurns;
     fitness -= 100 * (float)ag2repeatTurns;
 
 
-    //fitness = max(0.f, (float)fitness);
+    fitness = max(-1000000.f, min((float)fitness, 1000000.f));
 
     //fitness = getFitnessFitnessImpact();
     //fitness -= getTurnAndStructureFitnessImpact();
@@ -1362,11 +1364,11 @@ void Controller::actionNodeUpdateNodeValueFunction(Nodes::ActionNode *actionNode
 
     Nodes::Node* target = valueInputs.getNodeByCount(targetID);
 
-    float newValue = replacing ? valueModifier : target->getValue() + valueModifier;
+    float newValue = replacing ? valueModifier : target->getValue(turn) + valueModifier;
 
     target->setValue(newValue);
 
-    string saveString = "=iv " + to_string(target->getID()) + " " + to_string(target->getValue()) + " ";
+    string saveString = "=iv " + to_string(target->getID()) + " " + to_string(target->getValue(turn)) + " ";
     saveActionToFile(saveString);
 }
 
@@ -1414,7 +1416,7 @@ string Controller::getName() const { return name; }
 
 void Controller::totalSave() {
     filesystem::copy("..\\" + name + ".lsv", "..\\" + name + "_backup_"
-                        + to_string(DataBits::getTurn()) + ".lsv");
+                        + to_string(turn) + ".lsv");
 
     totalSave(name);
 }
