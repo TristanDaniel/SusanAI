@@ -627,10 +627,10 @@ void Controller::loadFromFile() {
                     // Random input
                     int mode;
                     float min, max;
-                    ss >> dropoutFlag;
 
                     ss >> id;
                     ss >> cycleFlag;
+                    ss >> dropoutFlag;
                     ss >> mode;
                     ss >> min;
                     ss >> max;
@@ -1422,17 +1422,23 @@ void Controller::totalSave() {
 }
 void Controller::totalSave(const std::string& fileName) {
     std::ofstream saveFile("..\\" + fileName + ".lsv");
+    std::ofstream graphFile("..\\" + fileName + ".graph");
+
+    graphFile << "digraph m {\nnode[width=.25,height=.375,fontsize=9]\n";
 
     for (auto n : nodes.getNodes()) {
+        n->graphSave(graphFile);
         if (n->getID() < 11) continue;
         n->totalSave(saveFile);
     }
+
+    graphFile << "}";
 
     saveFile << endl;
 
     int num = 0;
     for (auto syn : synapses.getSynapses()) {
-        syn->totalSave(saveFile);
+        syn->totalSave(saveFile, graphFile);
         num++;
         if (num == 200) {
             saveFile << endl;
@@ -1443,6 +1449,7 @@ void Controller::totalSave(const std::string& fileName) {
     saveFile << endl;
 
     saveFile.close();
+    graphFile.close();
 }
 
 void Controller::setWithoutSaveMode(bool mode) { withoutSaveMode = mode; }

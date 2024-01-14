@@ -57,6 +57,7 @@ namespace Nodes {
         float getLastValue() const;
 
 		virtual void addSynapse(Synapses::Synapse* syn);
+        void addOutputSynapse(Synapses::Synapse*  syn);
 		void removeSynapse(Synapses::Synapse* syn);
         void removeOutputSynapse(Synapses::Synapse* syn);
 
@@ -64,6 +65,7 @@ namespace Nodes {
 
         virtual std::string saveNode() = 0;
         void totalSave(std::ofstream& saveFile);
+        void graphSave(std::ofstream& graphFile);
 	};
 
 	class NotInputNode : public Node {

@@ -185,6 +185,9 @@ void Node::addSynapse(Synapses::Synapse* syn) {
     syn->setOutput(this);
     synapses.push_back(syn);
 }
+void Node::addOutputSynapse(Synapses::Synapse *syn) {
+    outputs.push_back(syn);
+}
 void Node::removeSynapse(Synapses::Synapse* syn) {
 	//const Synapses::Synapse s = syn;
 
@@ -250,6 +253,21 @@ void Node::totalSave(ofstream& saveFile) {
     lastTotalSave = DataBits::getTurn();
     totalSaving = false;*/
 
+}
+
+void Node::graphSave(std::ofstream &graphFile) {
+    graphFile << "\"" + to_string(getID()) + "\"\n";
+    if (outputs.empty()) return;
+    bool withOutput = false;
+    string listString = "\"" + to_string(getID()) + "\" -> {";
+    for (auto syn : outputs) {
+        Node* o = syn->getOutput();
+        if (o) {
+            withOutput = true;
+            listString += " \"" + to_string(o->getID()) + "\"";
+        }
+    }
+    if (withOutput) graphFile << listString + "}\n";
 }
 
 string NotInputNode::saveNode() {

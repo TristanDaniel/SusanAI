@@ -62,6 +62,7 @@ void ControllerTrainer::train() {
                                                         [&minBestController](LemonDrop::Controller *c)
                                                         { return c->getName() == minBestController->getName(); }),bestControllers.end());
                         remove(("..\\" + minBestController->getName() + ".lsv").c_str());
+                        remove(("..\\" + minBestController->getName() + ".graph").c_str());
                         remove(("..\\" + minBestController->getName() + "_data.txt").c_str());
 
                         minBestController = &*controller;
@@ -73,6 +74,7 @@ void ControllerTrainer::train() {
                         }
                     } else {
                         remove(("..\\" + controller->getName() + ".lsv").c_str());
+                        remove(("..\\" + controller->getName() + ".graph").c_str());
                         remove(("..\\" + controller->getName() + "_data.txt").c_str());
 
                     }
@@ -92,10 +94,12 @@ void ControllerTrainer::train() {
                 string saveName = "best_g" + to_string(i-1) + "_" + to_string(cont->getSavedFitness()) + "_" + cont->getName();
                 //cont->totalSave(saveName);
                 filesystem::copy("..\\" + cont->getName() + ".lsv", "..\\" + saveName + ".lsv");
+                filesystem::copy("..\\" + cont->getName() + ".graph", "..\\" + saveName + ".graph");
 
                 controllers[idx++] = new LemonDrop::Controller(cont->getName(), false, true, false);
 
                 remove(("..\\" + cont->getName() + ".lsv").c_str());
+                remove(("..\\" + cont->getName() + ".graph").c_str());
                 remove(("..\\" + cont->getName() + "_data.txt").c_str());
                 //controllers[idx]->resetFitness();
                 //controllers[idx++]->loadSavedData();
@@ -118,19 +122,27 @@ void ControllerTrainer::train() {
 
     }
 
-    float highestFitness = -10000;
+    float highestFitness = -10000000;
     LemonDrop::Controller* bestController;
 
     for (auto controller : controllers) {
         float contFitness = controller->getSavedFitness();
 
         if (contFitness > highestFitness) {
+            remove(("..\\" + bestController->getName() + ".lsv").c_str());
+            remove(("..\\" + bestController->getName() + ".graph").c_str());
+            remove(("..\\" + bestController->getName() + "_data.txt").c_str());
             highestFitness = contFitness;
             bestController = &*controller;
+        } else {
+            remove(("..\\" + controller->getName() + ".lsv").c_str());
+            remove(("..\\" + controller->getName() + ".graph").c_str());
+            remove(("..\\" + controller->getName() + "_data.txt").c_str());
         }
     }
 
     string  bestControllerName = bestController->getName();
     filesystem::copy("..\\" + bestControllerName + ".lsv", "..\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + ".lsv");
+    filesystem::copy("..\\" + bestControllerName + ".graph", "..\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + ".graph");
     //bestController->totalSave("best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName);
 }

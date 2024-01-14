@@ -11,9 +11,10 @@ using LemonDrop::Controller;
 
 int main()
 {
-    //Controller c("test_controller", true, false, true);
+    //Controller c("base_controller", true, false, false);
     //Controller c("test_controller", (string)"best_final_3208.315186_controller_g99_a26", false, true);
-    //c.mainLoop(100);
+    //c.mainLoop(750);
+    //c.totalSave();
 
 
     ControllerTrainer::train();

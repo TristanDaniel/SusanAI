@@ -27,6 +27,7 @@ unsigned int Synapse::getID() const { return id; }
 void Synapse::setInput(Nodes::Node* n) {
     if (input) input->removeOutputSynapse(this);
     input = n;
+    n->addOutputSynapse(this);
 }
 
 void Synapse::setOutput(Nodes::Node *n) {
@@ -54,7 +55,7 @@ float WeightedSynapse::getWeight() const { return weight; }
 Nodes::Node* Synapse::getOutput() const { return output; }
 Nodes::Node* Synapse::getInput() const { return input; }
 
-void Synapse::totalSave(std::ofstream& saveFile) {
+void Synapse::totalSave(std::ofstream& saveFile, std::ofstream& graphFile) {
     //if (totalSaving || lastTotalSave == DataBits::getTurn()) return;
 
     //totalSaving = true;
@@ -63,6 +64,14 @@ void Synapse::totalSave(std::ofstream& saveFile) {
 
     if (input != nullptr) saveFile << ">ns " + to_string(input->getID()) + " " + to_string(id) + " ";
     if (output != nullptr) saveFile << ">sn " + to_string(id) + " " + to_string(output->getID()) + " ";
+
+//    if (input && output) {
+//        graphFile << "\"" + to_string(input->getID()) + "\" -> \"" + to_string(output->getID()) + "\"\n";
+//    } else if (input) {
+//        graphFile << "\"" + to_string(input->getID()) + "\" -> \"ex" + to_string(input->getID()) + "\"\n";
+//    } else if (output) {
+//        graphFile << "\"ex" + to_string(output->getID()) + "\" -> \"" + to_string(output->getID()) + "\"\n";
+//    }
 
     //lastTotalSave = DataBits::getTurn();
     //totalSaving = false;

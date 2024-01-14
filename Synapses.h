@@ -35,7 +35,7 @@ namespace Synapses {
         bool isUnused();
 
         virtual std::string saveSynapse() = 0;
-        void totalSave(std::ofstream& saveFile);
+        void totalSave(std::ofstream& saveFile, std::ofstream& graphFile);
 
 		bool operator==(const Synapse& s) const;
 	};
