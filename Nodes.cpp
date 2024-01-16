@@ -222,7 +222,7 @@ RandomInput::RandomInput(unsigned int i, int m, float min, float max) : Input(i)
 
 void Output::getOutput(unsigned long long int curTurn) {
 	value = getValue(curTurn);
-	if (value) cout << "Output " << getID() << ": " << value << endl;
+	//if (value) cout << "Output " << getID() << ": " << value << endl;
 }
 
 string Node::getFlagListString() {

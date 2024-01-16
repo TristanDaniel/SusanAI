@@ -84,12 +84,12 @@ Controller::Controller(const std::string& contName, const bool generateNew, cons
         loadSavedData();
     }
 
-    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(138)));
-    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(139)));
-    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(140)));
-    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(141)));
-    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(142)));
-    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(143)));
+//    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(138)));
+//    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(139)));
+//    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(140)));
+//    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(141)));
+//    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(142)));
+//    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(143)));
 
     if (!withoutSaveMode) saveActionToFile("\n");
 }
@@ -107,12 +107,12 @@ Controller::Controller(const std::string &contName, const std::string &fileToLoa
 
     if (!withoutSaveMode) saveActionToFile("\n");
 
-    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(138)));
-    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(139)));
-    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(140)));
-    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(141)));
-    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(142)));
-    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(143)));
+//    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(138)));
+//    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(139)));
+//    baseAG1.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(140)));
+//    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(141)));
+//    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(142)));
+//    baseAG2.addNode(dynamic_cast<Nodes::ActionNode *>(nodes.getNodeByID(143)));
 }
 
 void Controller::operator()(int turnLimit) {
@@ -822,6 +822,26 @@ void Controller::loadFromFile() {
 
                     syn = synapses.getSynapseByID(id);
                     ((Synapses::WeightedSynapse*)syn)->setWeight(val);
+                } else if (infobit == ">ag") {
+                    // add node to action group
+                    ss >> id;
+                    int agNum;
+                    ss >> agNum;
+
+                    auto* an = (Nodes::ActionNode*)nodes.getNodeByID(id);
+                    switch (agNum) {
+                        case 0:
+                            baseAG1.addNode(an);
+                            break;
+                        case 1:
+                            baseAG2.addNode(an);
+                            break;
+                        case 2:
+                            extraAG.addNode(an);
+                            break;
+                        default:
+                            break;
+                    }
                 } else if (infobit == "eff") {
                         return;
                 }
@@ -1019,25 +1039,25 @@ void Controller::generateInitialController() {
 
     const int startID = 11;
     // base inputs
-    const int baseInputs = 4; // split 50/50 between random and static
-    const int baseInputHiddenLayers = 2;
-    const int nodesPerInputHiddenLayer = 2;
+    const int baseInputs = 2 * (int)LDRandomInt(1,3); // split 50/50 between random and static
+    const int baseInputHiddenLayers = (int)LDRandomInt(1,4);
+    const int nodesPerInputHiddenLayer = (int)LDRandomInt(1,6);
     const int firstInputHiddenLayerStartID = startID + baseInputs;
     // main hidden layers
-    const int hiddenLayers = 4;
-    const int nodesPerHiddenLayer = 20;
+    const int hiddenLayers = (int)LDRandomInt(1,6);
+    const int nodesPerHiddenLayer = 2 * (int)LDRandomInt(2,15);
     const int firstHiddenLayerStartID = firstInputHiddenLayerStartID
             + (nodesPerInputHiddenLayer * baseInputHiddenLayers);
     // output params inputs split layer
-    const int nodesToOutputParams = 10;
+    const int nodesToOutputParams = (int)LDRandomInt(5,15);
     const int nodesToOutputParamsStartID = firstHiddenLayerStartID
             + (nodesPerHiddenLayer * hiddenLayers);
-    const int nodesToOutputFiringThreshold = 2;
+    const int nodesToOutputFiringThreshold = (int)LDRandomInt(2,5);
     const int nodesToOutFireThreshStartID = nodesToOutputParamsStartID + nodesToOutputParams;
     // output params layer
     const int totalOutputParams = 25;
     const int outputParamNodesStartID = nodesToOutFireThreshStartID + nodesToOutputFiringThreshold;
-    const int firingThresholdNodes = 2;
+    const int firingThresholdNodes = (int)LDRandomInt(2,4);
     const int firingThresholdNodesStartID = outputParamNodesStartID + totalOutputParams;
     // outputs
     const int actionOutputs = 6;
@@ -1128,26 +1148,32 @@ void Controller::generateInitialController() {
     saveActionToFile(addNodeOutput->saveNode());
     nodes.addNode(addNodeOutput);
     outputs.addNode(addNodeOutput);
+    baseAG1.addNode((Nodes::ActionNode*)addNodeOutput);
     Nodes::Node* addSynOutput = new Nodes::AddSynapseNode(nodes.getNextID(), 0.5);
     saveActionToFile(addSynOutput->saveNode());
     nodes.addNode(addSynOutput);
     outputs.addNode(addSynOutput);
+    baseAG1.addNode((Nodes::ActionNode*)addSynOutput);
     Nodes::Node* makeConOutput = new Nodes::MakeConnectionNode(nodes.getNextID(), 0.5);
     saveActionToFile(makeConOutput->saveNode());
     nodes.addNode(makeConOutput);
     outputs.addNode(makeConOutput);
+    baseAG2.addNode((Nodes::ActionNode*)makeConOutput);
     Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), 0.5);
     saveActionToFile(setFlagOutput->saveNode());
     nodes.addNode(setFlagOutput);
     outputs.addNode(setFlagOutput);
+    baseAG1.addNode((Nodes::ActionNode*)setFlagOutput);
     Nodes::Node* updateWeightOutput = new Nodes::UpdateWeightNode(nodes.getNextID(), 0.5);
     saveActionToFile(updateWeightOutput->saveNode());
     nodes.addNode(updateWeightOutput);
     outputs.addNode(updateWeightOutput);
+    baseAG2.addNode((Nodes::ActionNode*)updateWeightOutput);
     Nodes::Node* updateNodeValueOutput = new Nodes::UpdateNodeValueNode(nodes.getNextID(), 0.5);
     saveActionToFile(updateNodeValueOutput->saveNode());
     nodes.addNode(updateNodeValueOutput);
     outputs.addNode(updateNodeValueOutput);
+    baseAG2.addNode((Nodes::ActionNode*)updateNodeValueOutput);
 
 
     saveActionToFile("\n");
@@ -1280,23 +1306,23 @@ float Controller::calcFitness() {
     fitness = 100 + ((float)nodes.getNumItems() / 4) + ((float)synapses.getNumItems() / 2);
     fitness -= (float)(unusedNodes.getNumItems() + unusedSynapses.getNumItems())
                 * ((float)turnsSinceStructureChange + 1)
-                * (((float)totalUU / (float)netSize) > 0.05 ? 100.f : 10);
+                * (((float)totalUU / (float)netSize) > 0.1 ? 10.f : 1);
     if (lastActionType4 + 0.25 >= actionTypeAvg.getAverage()
-        && lastActionType4 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 100 * (float)turnsSinceStructureChange;
+        && lastActionType4 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 10 * (float)turnsSinceStructureChange;
     if (lastActionType5 + 0.25 >= actionTypeAvg.getAverage()
-        && lastActionType5 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 100 * (float)turnsSinceStructureChange;
+        && lastActionType5 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 10 * (float)turnsSinceStructureChange;
     fitness += (float)fitDecTurns;
-    fitness -= (float)fitIncrTurns * 10;
+    fitness -= (float)fitIncrTurns * 5;
     if (lastActionType4 == 0) {
         timesDoneNothing++;
-        fitness -= 20 * (float)timesDoneNothing;
+        fitness -= 2 * (float)timesDoneNothing;
     }
     if (lastActionType5 == 0) {
         timesDoneNothing++;
-        fitness -= 20 * (float)timesDoneNothing;
+        fitness -= 2 * (float)timesDoneNothing;
     }
-    fitness -= 100 * (float)ag1repeatTurns;
-    fitness -= 100 * (float)ag2repeatTurns;
+    fitness -= 10 * (float)ag1repeatTurns;
+    fitness -= 10 * (float)ag2repeatTurns;
 
 
     fitness = max(-1000000.f, min((float)fitness, 1000000.f));
@@ -1424,7 +1450,11 @@ void Controller::totalSave(const std::string& fileName) {
     std::ofstream saveFile("..\\" + fileName + ".lsv");
     std::ofstream graphFile("..\\" + fileName + ".graph");
 
-    graphFile << "digraph m {\nnode[width=.25,height=.375,fontsize=9]\n";
+    graphFile << "digraph m {\n"
+                 "sep=0\n"
+                 "layout=\"neato\"\n"
+                 "overlap=\"scale\"\n"
+                 "node[width=.25,height=.375,fontsize=9]\n";
 
     for (auto n : nodes.getNodes()) {
         n->graphSave(graphFile);
@@ -1444,6 +1474,18 @@ void Controller::totalSave(const std::string& fileName) {
             saveFile << endl;
             num = 0;
         }
+    }
+
+    saveFile << endl;
+
+    for (auto n : baseAG1.getActionNodes()) {
+        saveFile << ">ag " + to_string(n->getID()) + " 0 ";
+    }
+    for (auto n : baseAG2.getActionNodes()) {
+        saveFile << ">ag " + to_string(n->getID()) + " 1 ";
+    }
+    for (auto n : extraAG.getActionNodes()) {
+        saveFile << ">ag " + to_string(n->getID()) + " 2 ";
     }
 
     saveFile << endl;

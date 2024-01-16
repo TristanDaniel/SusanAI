@@ -129,6 +129,8 @@ namespace UtilClasses {
         void addNode(Nodes::ActionNode* node);
 
         Nodes::ActionNode* getActionNode(unsigned long long int curTurn);
+
+        std::vector<Nodes::ActionNode*> getActionNodes();
     };
 
     class TurnTracker {

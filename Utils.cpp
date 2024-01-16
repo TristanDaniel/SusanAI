@@ -46,3 +46,7 @@ Nodes::ActionNode* UtilClasses::ActionGroup::getActionNode(unsigned long long in
     return firingNode;
 }
 
+std::vector<Nodes::ActionNode*> UtilClasses::ActionGroup::getActionNodes() {
+    return nodes;
+}
+
