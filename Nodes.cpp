@@ -255,19 +255,23 @@ void Node::totalSave(ofstream& saveFile) {
 
 }
 
-void Node::graphSave(std::ofstream &graphFile) {
+void Node::graphSave(std::ofstream &graphFile, std::ofstream& graphFile2) {
     graphFile << "\"" + to_string(getID()) + "\"\n";
+    graphFile2 << "\"" + to_string(getID()) + "\"\n";
     if (outputs.empty()) return;
     bool withOutput = false;
-    string listString = "\"" + to_string(getID()) + "\" -> {";
+    string listString;
+    string listString2 = "\"" + to_string(getID()) + "\" -> {";
     for (auto syn : outputs) {
         Node* o = syn->getOutput();
         if (o) {
             withOutput = true;
-            listString += " \"" + to_string(o->getID()) + "\"";
+            graphFile << "\"" + to_string(getID()) + "\" -> \"" + to_string(o->getID()) + "\"\n";
+            listString2 += " \"" + to_string(o->getID()) + "\"";
+
         }
     }
-    if (withOutput) graphFile << listString + "}\n";
+    if (withOutput) graphFile2 << listString2 + "}\n";
 }
 
 string NotInputNode::saveNode() {

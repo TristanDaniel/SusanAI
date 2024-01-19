@@ -63,6 +63,7 @@ void ControllerTrainer::train() {
                                                         { return c->getName() == minBestController->getName(); }),bestControllers.end());
                         remove(("..\\" + minBestController->getName() + ".lsv").c_str());
                         remove(("..\\" + minBestController->getName() + ".graph").c_str());
+                        remove(("..\\" + minBestController->getName() + "_comp.graph").c_str());
                         remove(("..\\" + minBestController->getName() + "_data.txt").c_str());
 
                         minBestController = &*controller;
@@ -75,6 +76,7 @@ void ControllerTrainer::train() {
                     } else {
                         remove(("..\\" + controller->getName() + ".lsv").c_str());
                         remove(("..\\" + controller->getName() + ".graph").c_str());
+                        remove(("..\\" + controller->getName() + "_comp.graph").c_str());
                         remove(("..\\" + controller->getName() + "_data.txt").c_str());
 
                     }
@@ -95,12 +97,14 @@ void ControllerTrainer::train() {
                 //cont->totalSave(saveName);
                 filesystem::copy("..\\" + cont->getName() + ".lsv", "..\\" + saveName + ".lsv");
                 filesystem::copy("..\\" + cont->getName() + ".graph", "..\\" + saveName + ".graph");
+                filesystem::copy("..\\" + cont->getName() + "_comp.graph", "..\\" + saveName + "_comp.graph");
                 filesystem::copy("..\\" + cont->getName() + "_data.txt", "..\\" + saveName + "_data.txt");
 
                 controllers[idx++] = new LemonDrop::Controller(cont->getName(), false, true, false);
 
                 remove(("..\\" + cont->getName() + ".lsv").c_str());
                 remove(("..\\" + cont->getName() + ".graph").c_str());
+                remove(("..\\" + cont->getName() + "_comp.graph").c_str());
                 remove(("..\\" + cont->getName() + "_data.txt").c_str());
                 //controllers[idx]->resetFitness();
                 //controllers[idx++]->loadSavedData();
@@ -133,6 +137,7 @@ void ControllerTrainer::train() {
             if (bestController) {
                 remove(("..\\" + bestController->getName() + ".lsv").c_str());
                 remove(("..\\" + bestController->getName() + ".graph").c_str());
+                remove(("..\\" + bestController->getName() + "_comp.graph").c_str());
                 remove(("..\\" + bestController->getName() + "_data.txt").c_str());
             }
 
@@ -141,6 +146,7 @@ void ControllerTrainer::train() {
         } else {
             remove(("..\\" + controller->getName() + ".lsv").c_str());
             remove(("..\\" + controller->getName() + ".graph").c_str());
+            remove(("..\\" + controller->getName() + "_comp.graph").c_str());
             remove(("..\\" + controller->getName() + "_data.txt").c_str());
         }
     }
@@ -148,6 +154,13 @@ void ControllerTrainer::train() {
     string  bestControllerName = bestController->getName();
     filesystem::copy("..\\" + bestControllerName + ".lsv", "..\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + ".lsv");
     filesystem::copy("..\\" + bestControllerName + ".graph", "..\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + ".graph");
+    filesystem::copy("..\\" + bestControllerName + "_comp.graph", "..\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + "_comp.graph");
     filesystem::copy("..\\" + bestControllerName + "_data.txt", "..\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + "_data.txt");
+
+    remove(("..\\" + bestControllerName + ".lsv").c_str());
+    remove(("..\\" + bestControllerName + ".graph").c_str());
+    remove(("..\\" + bestControllerName + "_comp.graph").c_str());
+    remove(("..\\" + bestControllerName + "_data.txt").c_str());
+
     //bestController->totalSave("best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName);
 }

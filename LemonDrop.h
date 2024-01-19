@@ -41,7 +41,7 @@ namespace LemonDrop {
                     * actionTypeAgvInput,
                     * turnsSinceStructureChangeInput;
 
-        int loopwait = 500;
+        int loopwait = 1000;
 
         int turn;
 

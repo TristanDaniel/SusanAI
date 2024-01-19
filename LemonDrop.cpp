@@ -240,7 +240,7 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
             switch (actionType) {
                 case 0:
                     // do nothing
-                    n = new Nodes::AddNodeNode(id, threshold);
+                    n = new Nodes::ActionNode(id, threshold, 0);
 
                     //n = new Nodes::ActionNode(id, threshold, 0);
                     break;
@@ -486,11 +486,11 @@ void Controller::getAllOutputs() {
                 break;
             case Flags::ActionFlag::ADD_NODE:
                 actionNodeAddNodeFunction(actionNode);
-                turnsSinceStructureChange = 0;
+                //turnsSinceStructureChange = 0;
                 break;
             case Flags::ActionFlag::ADD_SYNAPSE:
                 actionNodeAddSynapseFunction(actionNode);
-                turnsSinceStructureChange = 0;
+                //turnsSinceStructureChange = 0;
                 break;
             case Flags::ActionFlag::MAKE_CONNECTION:
                 if (!actionNodeMakeConnectionFunction(actionNode)) actionType = Flags::ActionFlag::DO_NOTHING;
@@ -912,7 +912,9 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 0:
         {
             if (unusedNodes.getNumItems() == 0) uu1 = false;
+            if (unusedNodes.getNumItems() > 10) uu1 = true;
             if (unusedSynapses.getNumItems() == 0) uu2 = false;
+            if (unusedSynapses.getNumItems() > 5) uu2 = true;
 
             unsigned int nodeIDLimVal = uu1 ? unusedNodes.getNumItems() : nodes.getCurrID();
             unsigned int synIDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();
@@ -927,7 +929,9 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 1:
         {
             if (unusedNodes.getNumItems() == 0) uu2 = false;
+            if (unusedNodes.getNumItems() > 10) uu2 = true;
             if (unusedSynapses.getNumItems() == 0) uu1 = false;
+            if (unusedSynapses.getNumItems() > 5) uu1 = true;
 
             unsigned int nodeIDLimVal = uu2 ? unusedNodes.getNumItems() : nodes.getCurrID();
             unsigned int synIDLimVal = uu1 ? unusedSynapses.getNumItems() : synapses.getCurrID();
@@ -941,8 +945,11 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 2:
         {
             if (unusedNodes.getNumItems() == 0) uu1 = false;
+            if (unusedNodes.getNumItems() > 10) uu1 = true;
             if (unusedSynapses.getNumItems() == 0) uu2 = false;
+            if (unusedSynapses.getNumItems() > 5) uu2 = true;
             if (unusedNodes.getNumItems() == 0) uu3 = false;
+            if (unusedNodes.getNumItems() > 10) uu3 = true;
 
             unsigned int nodeIDLimVal = uu1 ? unusedNodes.getNumItems() : nodes.getCurrID();
             unsigned int synIDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();
@@ -961,7 +968,9 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 3:
         {
             if (unusedSynapses.getNumItems() == 0) uu1 = false;
+            if (unusedSynapses.getNumItems() > 5) uu1 = true;
             if (unusedSynapses.getNumItems() == 0) uu2 = false;
+            if (unusedSynapses.getNumItems() > 5) uu2 = true;
 
             unsigned int synIDLimVal = uu1 ? unusedSynapses.getNumItems() : synapses.getCurrID();
             unsigned int syn2IDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();
@@ -999,7 +1008,7 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
 void Controller::actionNodeSetFlagForNodeFunction(Nodes::ActionNode *actionNode) {
     auto* node = dynamic_cast<Nodes::SetFlagNode*>(actionNode);
 
-    unsigned int targetID = (unsigned int)(abs(node->getTargetID()) * nodes.getCurrID()) % nodes.getCurrID();
+    unsigned int targetID = (unsigned int)(abs(node->getTargetID()) * (float)nodes.getCurrID()) % nodes.getCurrID();
     auto flag = (Flags::NodeFlag)abs(node->getFlagVal());
 
     Nodes::Node* n = nodes.getNodeByID(targetID);
@@ -1311,16 +1320,16 @@ float Controller::calcFitness() {
         && lastActionType4 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 10 * (float)turnsSinceStructureChange;
     if (lastActionType5 + 0.25 >= actionTypeAvg.getAverage()
         && lastActionType5 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 10 * (float)turnsSinceStructureChange;
+    fitness -= 5 * (float)turnsSinceStructureChange;
     fitness += (float)fitDecTurns;
     fitness -= (float)fitIncrTurns * 5;
     if (lastActionType4 == 0) {
         timesDoneNothing++;
-        fitness -= 2 * (float)timesDoneNothing;
     }
     if (lastActionType5 == 0) {
         timesDoneNothing++;
-        fitness -= 2 * (float)timesDoneNothing;
     }
+    fitness -= 2 * (float)timesDoneNothing;
     fitness -= 10 * (float)ag1repeatTurns;
     fitness -= 10 * (float)ag2repeatTurns;
 
@@ -1449,20 +1458,27 @@ void Controller::totalSave() {
 void Controller::totalSave(const std::string& fileName) {
     std::ofstream saveFile("..\\" + fileName + ".lsv");
     std::ofstream graphFile("..\\" + fileName + ".graph");
+    std::ofstream graphFile2("..\\" + fileName + "_comp.graph");
 
     graphFile << "digraph m {\n"
                  "sep=0\n"
                  "layout=\"neato\"\n"
                  "overlap=\"scale\"\n"
                  "node[width=.25,height=.375,fontsize=9]\n";
+    graphFile2 << "digraph m {\n"
+                 "sep=0\n"
+                 "layout=\"neato\"\n"
+                 "overlap=\"scale\"\n"
+                 "node[width=.25,height=.375,fontsize=9]\n";
 
     for (auto n : nodes.getNodes()) {
-        n->graphSave(graphFile);
+        n->graphSave(graphFile, graphFile2);
         if (n->getID() < 11) continue;
         n->totalSave(saveFile);
     }
 
     graphFile << "}";
+    graphFile2 << "}";
 
     saveFile << endl;
 

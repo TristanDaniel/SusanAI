@@ -65,7 +65,7 @@ namespace Nodes {
 
         virtual std::string saveNode() = 0;
         void totalSave(std::ofstream& saveFile);
-        void graphSave(std::ofstream& graphFile);
+        void graphSave(std::ofstream& graphFile, std::ofstream& graphFile2);
 	};
 
 	class NotInputNode : public Node {

@@ -12,7 +12,7 @@ using LemonDrop::Controller;
 int main()
 {
     //Controller c("base_controller", true, false, false);
-    //Controller c("test_controller", (string)"best_final_3208.315186_controller_g99_a26", false, true);
+    //Controller c("scrungly", (string)"scrungly_post_training", false, true);
     //c.mainLoop(750);
     //c.totalSave();
 
