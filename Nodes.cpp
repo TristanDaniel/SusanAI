@@ -615,5 +615,62 @@ float UpdateNodeValueNode::getValueModifier() const { return valueModifier; }
 bool UpdateNodeValueNode::replacingValue() const { return replaceValue; }
 
 
+void TurtleNode::getOutput(unsigned long long int curTurn) {
+    if (value == 0) return;
+
+    instruction = instructionInput ? (int)(instructionInput->getData(curTurn) * 18) % 18 : -1;
+
+    float pv = paramValueInput ? paramValueInput->getData(curTurn) : 0;
+    switch (instruction) {
+        case 0:
+        case 1:
+            paramValue =  1 + (int)(abs(pv) * 100) % 100;
+            break;
+        case 2:
+        case 3:
+            paramValue =  1 + (int)(abs(pv) * 360) % 360;
+            break;
+        case 4:
+        case 5:
+            paramValue =  -500 + (int)(abs(pv) * 1000) % 1000;
+            break;
+        case 6:
+            paramValue =  (int)(abs(pv) * 361) % 361;
+            break;
+        case 8:
+        case 9:
+            paramValue =  1 + (int)(abs(pv) * 10) % 10;
+            break;
+        case 12:
+            paramValue =  1 + (int)(abs(pv) * 100) % 100;
+            break;
+        case 13:
+        case 14:
+        case 15:
+            paramValue =  1 + (int)(abs(pv) * 8) % 8;
+            break;
+        default:
+            paramValue = 0;
+    }
+}
+
+void TurtleNode::addSynapse(Synapses::Synapse *syn) {
+    if (!instructionInput) {
+        instructionInput = syn;
+        syn->setOutput(this);
+        return;
+    }
+    if (!paramValueInput) {
+        paramValueInput = syn;
+        syn->setOutput(this);
+        return;
+    }
+
+    Node::addSynapse(syn);
+}
+
+int TurtleNode::getInstruction() const { return instruction; }
+int TurtleNode::getParamValue() const { return paramValue; }
+
 
 

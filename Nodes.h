@@ -334,6 +334,25 @@ namespace Nodes {
         bool replacingValue() const;
     };
 
+    class TurtleNode : public ActionNode {
+
+    protected:
+        int instruction = 0, paramValue = 0;
+
+        Synapses::Synapse* instructionInput = nullptr,
+                         * paramValueInput = nullptr;
+
+    public:
+        TurtleNode(unsigned int i, float t) : ActionNode(i, t, 7) {}
+
+        void getOutput(unsigned long long int curTurn) override;
+
+        void addSynapse(Synapses::Synapse* syn) override;
+
+        int getInstruction() const;
+        int getParamValue() const;
+    };
+
 
 
 }

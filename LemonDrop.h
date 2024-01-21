@@ -23,7 +23,7 @@ namespace LemonDrop {
         Handlers::NodeHandler unusedNodes;
 
         std::vector<UtilClasses::ActionGroup*> actionGroups;
-        UtilClasses::ActionGroup baseAG1, baseAG2, extraAG;
+        UtilClasses::ActionGroup baseAG1, baseAG2, extraAG, turtleAG;
 
         Handlers::SynapseHandler synapses;
         Handlers::SynapseHandler weightedSynapses;
@@ -62,6 +62,8 @@ namespace LemonDrop {
 
         bool brokeActionNode;
 
+        bool turtleStarted, turtleFilling, turtlePenDown;
+
 
 
         bool newNode(unsigned int type, ParamPackages::NodeParams params);
@@ -89,6 +91,7 @@ namespace LemonDrop {
         void actionNodeSetFlagForNodeFunction(Nodes::ActionNode* actionNode);
         void actionNodeUpdateWeightFunction(Nodes::ActionNode* actionNode);
         void actionNodeUpdateNodeValueFunction(Nodes::ActionNode* actionNode);
+        void actionNodeTurtleFunction(Nodes::ActionNode* actionNode);
 
 //        void actionNodeNodeToSynFunction(Nodes::MakeConnectionNode* node);
 //        void actionNodeSynToNodeFunction(Nodes::MakeConnectionNode* node);
@@ -135,6 +138,8 @@ namespace LemonDrop {
         float getSavedFitness();
 
         void loadSavedData();
+
+        void addTurtleInterface();
     };
 
 }

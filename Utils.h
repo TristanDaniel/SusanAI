@@ -24,7 +24,8 @@ namespace Flags {
         MAKE_CONNECTION,
         SET_FLAG_FOR_NODE,
         UPDATE_WEIGHT,
-        UPDATE_NODE_VALUE
+        UPDATE_NODE_VALUE,
+        TURTLE
     };
 
 }

@@ -25,6 +25,7 @@ Controller::Controller() {
     actionGroups.push_back(&baseAG1);
     actionGroups.push_back(&baseAG2);
     actionGroups.push_back(&extraAG);
+    actionGroups.push_back(&turtleAG);
 
     synapses.InitHandler();
     weightedSynapses.InitHandler();
@@ -79,6 +80,8 @@ Controller::Controller(const std::string& contName, const bool generateNew, cons
         }
 
         generateInitialController();
+        addTurtleInterface();
+        fitness = 100 + ((float)nodes.getNumItems() / 4) + ((float)synapses.getNumItems() / 2);
     } else {
         initController();
         loadSavedData();
@@ -505,6 +508,10 @@ void Controller::getAllOutputs() {
             case Flags::ActionFlag::UPDATE_NODE_VALUE:
                 actionNodeUpdateNodeValueFunction(actionNode);
                 break;
+            case Flags::ActionFlag::TURTLE:
+                if (verboseActionsMode) cout << "turtling" << endl;
+                actionNodeTurtleFunction(actionNode);
+                break;
         }
 
         lastActionType1 = lastActionType2;
@@ -522,7 +529,7 @@ void Controller::getAllOutputs() {
 }
 
 void Controller::loop() {
-    if (verboseActionsMode) cout << "loop" << endl;
+    if (verboseActionsMode) cout << "loop : " << to_string(turn) << endl;
 
     turn++;
     //cout << to_string(turn) << endl;
@@ -715,6 +722,9 @@ void Controller::loadFromFile() {
                         case 6:
                             n = new Nodes::UpdateNodeValueNode(id, threshold);
                             break;
+                        case 7:
+                            n = new Nodes::TurtleNode(id, threshold);
+                            break;
                         default:
                             // invalid input punished with do nothing action
                             n = new Nodes::ActionNode(id, threshold, 0);
@@ -839,6 +849,8 @@ void Controller::loadFromFile() {
                         case 2:
                             extraAG.addNode(an);
                             break;
+                        case 3:
+                            turtleAG.addNode(an);
                         default:
                             break;
                     }
@@ -1153,32 +1165,32 @@ void Controller::generateInitialController() {
     //saveActionToFile(doNothingOutput->saveNode());
     //nodes.addNode(doNothingOutput);
     //outputs.addNode(doNothingOutput);
-    Nodes::Node* addNodeOutput = new Nodes::AddNodeNode(nodes.getNextID(), 0.5);
+    Nodes::Node* addNodeOutput = new Nodes::AddNodeNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(addNodeOutput->saveNode());
     nodes.addNode(addNodeOutput);
     outputs.addNode(addNodeOutput);
     baseAG1.addNode((Nodes::ActionNode*)addNodeOutput);
-    Nodes::Node* addSynOutput = new Nodes::AddSynapseNode(nodes.getNextID(), 0.5);
+    Nodes::Node* addSynOutput = new Nodes::AddSynapseNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(addSynOutput->saveNode());
     nodes.addNode(addSynOutput);
     outputs.addNode(addSynOutput);
     baseAG1.addNode((Nodes::ActionNode*)addSynOutput);
-    Nodes::Node* makeConOutput = new Nodes::MakeConnectionNode(nodes.getNextID(), 0.5);
+    Nodes::Node* makeConOutput = new Nodes::MakeConnectionNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(makeConOutput->saveNode());
     nodes.addNode(makeConOutput);
     outputs.addNode(makeConOutput);
     baseAG2.addNode((Nodes::ActionNode*)makeConOutput);
-    Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), 0.5);
+    Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(setFlagOutput->saveNode());
     nodes.addNode(setFlagOutput);
     outputs.addNode(setFlagOutput);
     baseAG1.addNode((Nodes::ActionNode*)setFlagOutput);
-    Nodes::Node* updateWeightOutput = new Nodes::UpdateWeightNode(nodes.getNextID(), 0.5);
+    Nodes::Node* updateWeightOutput = new Nodes::UpdateWeightNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(updateWeightOutput->saveNode());
     nodes.addNode(updateWeightOutput);
     outputs.addNode(updateWeightOutput);
     baseAG2.addNode((Nodes::ActionNode*)updateWeightOutput);
-    Nodes::Node* updateNodeValueOutput = new Nodes::UpdateNodeValueNode(nodes.getNextID(), 0.5);
+    Nodes::Node* updateNodeValueOutput = new Nodes::UpdateNodeValueNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(updateNodeValueOutput->saveNode());
     nodes.addNode(updateNodeValueOutput);
     outputs.addNode(updateNodeValueOutput);
@@ -1317,9 +1329,9 @@ float Controller::calcFitness() {
                 * ((float)turnsSinceStructureChange + 1)
                 * (((float)totalUU / (float)netSize) > 0.1 ? 10.f : 1);
     if (lastActionType4 + 0.25 >= actionTypeAvg.getAverage()
-        && lastActionType4 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 10 * (float)turnsSinceStructureChange;
+        && lastActionType4 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 2 * (float)turnsSinceStructureChange;
     if (lastActionType5 + 0.25 >= actionTypeAvg.getAverage()
-        && lastActionType5 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 10 * (float)turnsSinceStructureChange;
+        && lastActionType5 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 2 * (float)turnsSinceStructureChange;
     fitness -= 5 * (float)turnsSinceStructureChange;
     fitness += (float)fitDecTurns;
     fitness -= (float)fitIncrTurns * 5;
@@ -1329,9 +1341,9 @@ float Controller::calcFitness() {
     if (lastActionType5 == 0) {
         timesDoneNothing++;
     }
-    fitness -= 2 * (float)timesDoneNothing;
-    fitness -= 10 * (float)ag1repeatTurns;
-    fitness -= 10 * (float)ag2repeatTurns;
+    fitness -= 5 * (float)timesDoneNothing;
+    fitness -= 2 * (float)ag1repeatTurns;
+    fitness -= 2 * (float)ag2repeatTurns;
 
 
     fitness = max(-1000000.f, min((float)fitness, 1000000.f));
@@ -1503,6 +1515,9 @@ void Controller::totalSave(const std::string& fileName) {
     for (auto n : extraAG.getActionNodes()) {
         saveFile << ">ag " + to_string(n->getID()) + " 2 ";
     }
+    for (auto n : turtleAG.getActionNodes()) {
+        saveFile << ">ag " + to_string(n->getID()) + " 3 ";
+    }
 
     saveFile << endl;
 
@@ -1561,6 +1576,112 @@ void Controller::loadSavedData() {
     loadFile >> turnsSinceStructureChange;
 
     loadFile.close();
+}
+
+void Controller::actionNodeTurtleFunction(Nodes::ActionNode *actionNode) {
+    auto node = dynamic_cast<Nodes::TurtleNode*>(actionNode);
+
+    ofstream  turtleFile;
+    if (!turtleStarted) {
+        turtleFile = ofstream("..\\" + name + "_turtle.py");
+        turtleFile << "from turtle import *\nsetup(width=1.0, height=1.0)\n\n";
+        turtleStarted = true;
+        turtleFilling = false;
+        turtlePenDown = true;
+    } else {
+        turtleFile = ofstream("\\" + name + "_turtle.py", std::ios::app);
+    }
+
+    int inst = node->getInstruction();
+    int pvint = node->getParamValue();
+    string pv = to_string(pvint);
+
+    string colors[8] = {"white", "black", "red", "green", "blue", "cyan", "yellow", "magenta"};
+
+    switch (inst) {
+        case -1:
+            return;
+        case 0:
+            turtleFile << "forward(" + pv + ")\n";
+            break;
+        case 1:
+            turtleFile << "backward(" + pv + ")\n";
+            break;
+        case 2:
+            turtleFile << "right(" + pv + ")\n";
+            break;
+        case 3:
+            turtleFile << "left(" + pv + ")\n";
+            break;
+        case 4:
+            turtleFile << "setx(" + pv + ")\n";
+            break;
+        case 5:
+            turtleFile << "sety(" + pv + ")\n";
+            break;
+        case 6:
+            turtleFile << "setheading(" + pv + ")\n";
+            break;
+        case 7:
+            turtleFile << "home()\n";
+            break;
+        case 8:
+            turtleFile << "circle(" + pv + ")\n";
+            break;
+        case 9:
+            turtleFile << "dot(" + pv + ")\n";
+            break;
+        case 10:
+            if (turtlePenDown) break;
+            turtleFile << "pendown()\n";
+            break;
+        case 11:
+            if (!turtlePenDown) break;
+            turtleFile << "penup()\n";
+            break;
+        case 13:
+            turtleFile << "pensize(" + pv + ")\n";
+            break;
+        case 14:
+            turtleFile << "color(" + colors[pvint] + ")\n";
+            break;
+        case 15:
+            turtleFile << "pencolor(" + colors[pvint] + ")\n";
+            break;
+        case 16:
+            turtleFile << "fillcolor(" + colors[pvint] + ")\n";
+            break;
+        case 17:
+            if (turtleFilling) break;
+            turtleFile << "begin_fill()\n";
+            break;
+        case 18:
+            if (!turtleFilling) break;
+            turtleFile << "end_fill()\n";
+            break;
+        default:
+            break;
+    }
+
+    turtleFile.close();
+}
+
+void Controller::addTurtleInterface() {
+    int startID = (int)nodes.getCurrID() + 1;
+
+    makeStandardLayer(startID, 10);
+
+    makeStandardLayer(startID + 10, 4);
+    connectTwoLayers(startID, 10, startID+10, 4);
+
+    createAndConnectUniformRepeatedLayers(startID + 10, 4, 3);
+
+    auto* turtleNode = new Nodes::TurtleNode(nodes.getNextID(), 0.5);
+    nodes.addNode(turtleNode);
+    outputs.addNode(turtleNode);
+    turtleAG.addNode(turtleNode);
+
+    connectTwoLayers((int)turtleNode->getID() - 4, 4, (int)turtleNode->getID(), 1);
 }
 
 

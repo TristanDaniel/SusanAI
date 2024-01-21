@@ -12,12 +12,13 @@ using LemonDrop::Controller;
 int main()
 {
     //Controller c("base_controller", true, false, false);
-    //Controller c("scrungly", (string)"scrungly_post_training", false, true);
-    //c.mainLoop(750);
-    //c.totalSave();
+    Controller c("spike", (string)"spike_post_training", false, true);
+    c.addTurtleInterface();
+    c.mainLoop(750);
+    c.totalSave();
 
 
-    ControllerTrainer::train();
+    //ControllerTrainer::train();
 
 	cout << "Done" << endl;
 	return 0;

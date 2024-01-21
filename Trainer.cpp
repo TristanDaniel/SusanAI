@@ -31,6 +31,10 @@ void ControllerTrainer::train() {
 
         if (i != 0) {
             cout << "Processing gen " << to_string(i) << endl;
+
+            string dirName = "models\\gen" + to_string(i-1);
+            filesystem::create_directory("..\\" + dirName);
+
             float minHighestFitness = 1000000;
             LemonDrop::Controller* minBestController;
             //float highestFitness = -10000;
@@ -95,10 +99,12 @@ void ControllerTrainer::train() {
             for (auto cont : bestControllers) {
                 string saveName = "best_g" + to_string(i-1) + "_" + to_string(cont->getSavedFitness()) + "_" + cont->getName();
                 //cont->totalSave(saveName);
-                filesystem::copy("..\\" + cont->getName() + ".lsv", "..\\" + saveName + ".lsv");
-                filesystem::copy("..\\" + cont->getName() + ".graph", "..\\" + saveName + ".graph");
-                filesystem::copy("..\\" + cont->getName() + "_comp.graph", "..\\" + saveName + "_comp.graph");
-                filesystem::copy("..\\" + cont->getName() + "_data.txt", "..\\" + saveName + "_data.txt");
+                string contDirName = "..\\" + dirName += "\\" + saveName + "\\";
+                filesystem::create_directory(contDirName);
+                filesystem::copy("..\\" + cont->getName() + ".lsv", contDirName + saveName + ".lsv");
+                filesystem::copy("..\\" + cont->getName() + ".graph", contDirName + saveName + ".graph");
+                filesystem::copy("..\\" + cont->getName() + "_comp.graph", contDirName + saveName + "_comp.graph");
+                filesystem::copy("..\\" + cont->getName() + "_data.txt", contDirName + saveName + "_data.txt");
 
                 controllers[idx++] = new LemonDrop::Controller(cont->getName(), false, true, false);
 
@@ -152,10 +158,11 @@ void ControllerTrainer::train() {
     }
 
     string  bestControllerName = bestController->getName();
-    filesystem::copy("..\\" + bestControllerName + ".lsv", "..\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + ".lsv");
-    filesystem::copy("..\\" + bestControllerName + ".graph", "..\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + ".graph");
-    filesystem::copy("..\\" + bestControllerName + "_comp.graph", "..\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + "_comp.graph");
-    filesystem::copy("..\\" + bestControllerName + "_data.txt", "..\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + "_data.txt");
+    filesystem::create_directory("..\\models\\final");
+    filesystem::copy("..\\" + bestControllerName + ".lsv", "..\\models\\final\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + ".lsv");
+    filesystem::copy("..\\" + bestControllerName + ".graph", "..\\models\\final\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + ".graph");
+    filesystem::copy("..\\" + bestControllerName + "_comp.graph", "..\\models\\final\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + "_comp.graph");
+    filesystem::copy("..\\" + bestControllerName + "_data.txt", "..\\models\\final\\best_final_" + to_string(bestController->getSavedFitness()) + "_" + bestControllerName + "_data.txt");
 
     remove(("..\\" + bestControllerName + ".lsv").c_str());
     remove(("..\\" + bestControllerName + ".graph").c_str());
