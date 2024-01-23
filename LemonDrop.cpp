@@ -924,7 +924,7 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 0:
         {
             if (unusedNodes.getNumItems() == 0) uu1 = false;
-            if (unusedNodes.getNumItems() > 10) uu1 = true;
+            //if (unusedNodes.getNumItems() > 10) uu1 = true;
             if (unusedSynapses.getNumItems() == 0) uu2 = false;
             if (unusedSynapses.getNumItems() > 5) uu2 = true;
 
@@ -941,7 +941,7 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 1:
         {
             if (unusedNodes.getNumItems() == 0) uu2 = false;
-            if (unusedNodes.getNumItems() > 10) uu2 = true;
+            //if (unusedNodes.getNumItems() > 10) uu2 = true;
             if (unusedSynapses.getNumItems() == 0) uu1 = false;
             if (unusedSynapses.getNumItems() > 5) uu1 = true;
 
@@ -957,11 +957,11 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 2:
         {
             if (unusedNodes.getNumItems() == 0) uu1 = false;
-            if (unusedNodes.getNumItems() > 10) uu1 = true;
+            //if (unusedNodes.getNumItems() > 10) uu1 = true;
             if (unusedSynapses.getNumItems() == 0) uu2 = false;
             if (unusedSynapses.getNumItems() > 5) uu2 = true;
             if (unusedNodes.getNumItems() == 0) uu3 = false;
-            if (unusedNodes.getNumItems() > 10) uu3 = true;
+            //if (unusedNodes.getNumItems() > 10) uu3 = true;
 
             unsigned int nodeIDLimVal = uu1 ? unusedNodes.getNumItems() : nodes.getCurrID();
             unsigned int synIDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();

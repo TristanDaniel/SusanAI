@@ -78,3 +78,4 @@ void Synapse::totalSave(std::ofstream& saveFile, std::ofstream& graphFile) {
 }
 
 
+

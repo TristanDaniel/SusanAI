@@ -11,10 +11,10 @@ using LemonDrop::Controller;
 
 int main()
 {
-    //Controller c("base_controller", true, false, false);
-    Controller c("spike", (string)"spike_post_training", false, true);
+    //Controller c("byte", false, false, true);
+    Controller c("byte", (string)"byte_post_training", false, true);
     c.addTurtleInterface();
-    c.mainLoop(750);
+    c.mainLoop(5000);
     c.totalSave();
 
 

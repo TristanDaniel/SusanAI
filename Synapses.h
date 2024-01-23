@@ -72,5 +72,13 @@ namespace Synapses {
 
         std::string  saveSynapse() override;
 	};
+
+    class GatedSynapse : public Synapse {
+
+    protected:
+        Nodes::Node* gateNode{};
+
+        bool checkGate();
+    };
 	
 }
