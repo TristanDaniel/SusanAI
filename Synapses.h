@@ -78,7 +78,9 @@ namespace Synapses {
     protected:
         Nodes::Node* gateNode{};
 
-        bool checkGate();
+        bool checkGate(unsigned long long int curTurn);
+
+        float getData(unsigned long long int curTurn) override;
     };
 	
 }

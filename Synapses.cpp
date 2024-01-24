@@ -4,6 +4,7 @@ using namespace std;
 using Synapses::Synapse;
 using Synapses::PassthroughSynapse;
 using Synapses::WeightedSynapse;
+using Synapses::GatedSynapse;
 
 PassthroughSynapse::PassthroughSynapse(unsigned int i) { id = i; }
 PassthroughSynapse::PassthroughSynapse(unsigned int i, Nodes::Node *inNode) { id = i; input = inNode; }
@@ -77,5 +78,10 @@ void Synapse::totalSave(std::ofstream& saveFile, std::ofstream& graphFile) {
     //totalSaving = false;
 }
 
+bool GatedSynapse::checkGate(unsigned long long int curTurn) {
+    return gateNode && gateNode->getValue(curTurn) > 0;
+}
 
-
+float GatedSynapse::getData(unsigned long long curTurn) {
+    return (input && checkGate(curTurn)) ? input->getValue(curTurn) : 0;
+}

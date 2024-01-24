@@ -73,12 +73,12 @@ namespace ParamPackages {
 
 namespace DataBits {
     static const int NUM_NODE_TYPES = 6;
-    static const int NUM_ACTION_TYPES = 6;
+    static const int NUM_ACTION_TYPES = 7;
     static const int NUM_SYN_TYPES = 2;
     static const int NUM_CONN_TYPES = 4;
 
     static const int NUM_FLAG_TARGET_TYPES = 0;
-    static const int NUM_NODE_FLAGS = 3;
+    static const int NUM_NODE_FLAGS = 7;
 }
 
 namespace UtilFunctions {
