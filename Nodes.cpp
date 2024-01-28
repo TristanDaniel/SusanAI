@@ -672,5 +672,3 @@ void TurtleNode::addSynapse(Synapses::Synapse *syn) {
 int TurtleNode::getInstruction() const { return instruction; }
 int TurtleNode::getParamValue() const { return paramValue; }
 
-
-

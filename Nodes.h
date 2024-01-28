@@ -353,6 +353,15 @@ namespace Nodes {
         int getParamValue() const;
     };
 
+    class NodeWithSecondaryInput : NotInputNode {
+
+    protected:
+        Synapses::Synapse* secondaryInput;
+
+    public:
+
+
+    };
 
 
 }

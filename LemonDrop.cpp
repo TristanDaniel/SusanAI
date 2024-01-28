@@ -1581,8 +1581,14 @@ void Controller::loadSavedData() {
 void Controller::actionNodeTurtleFunction(Nodes::ActionNode *actionNode) {
     auto node = dynamic_cast<Nodes::TurtleNode*>(actionNode);
 
+    int inst = node->getInstruction();
+    int pvint = node->getParamValue();
+    string pv = to_string(pvint);
+
+    string colors[8] = {"white", "black", "red", "green", "blue", "cyan", "yellow", "magenta"};
+
     ofstream  turtleFile;
-    if (!turtleStarted) {
+    if (!turtleStarted && inst != -1) {
         turtleFile = ofstream("..\\" + name + "_turtle.py");
         turtleFile << "from turtle import *\nsetup(width=1.0, height=1.0)\n\n";
         turtleStarted = true;
@@ -1592,14 +1598,9 @@ void Controller::actionNodeTurtleFunction(Nodes::ActionNode *actionNode) {
         turtleFile = ofstream("\\" + name + "_turtle.py", std::ios::app);
     }
 
-    int inst = node->getInstruction();
-    int pvint = node->getParamValue();
-    string pv = to_string(pvint);
-
-    string colors[8] = {"white", "black", "red", "green", "blue", "cyan", "yellow", "magenta"};
-
     switch (inst) {
         case -1:
+            turtleFile.close();
             return;
         case 0:
             turtleFile << "forward(" + pv + ")\n";
@@ -1676,7 +1677,7 @@ void Controller::addTurtleInterface() {
 
     createAndConnectUniformRepeatedLayers(startID + 10, 4, 3);
 
-    auto* turtleNode = new Nodes::TurtleNode(nodes.getNextID(), 0.5);
+    auto* turtleNode = new Nodes::TurtleNode(nodes.getNextID(), 0.1);
     nodes.addNode(turtleNode);
     outputs.addNode(turtleNode);
     turtleAG.addNode(turtleNode);

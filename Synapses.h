@@ -72,15 +72,5 @@ namespace Synapses {
 
         std::string  saveSynapse() override;
 	};
-
-    class GatedSynapse : public Synapse {
-
-    protected:
-        Nodes::Node* gateNode{};
-
-        bool checkGate(unsigned long long int curTurn);
-
-        float getData(unsigned long long int curTurn) override;
-    };
 	
 }
