@@ -360,6 +360,7 @@ namespace Nodes {
 
     public:
 
+        void setSecondaryInput(Synapses::Synapse* syn);
 
     };
 

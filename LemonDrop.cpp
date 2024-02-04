@@ -1582,13 +1582,14 @@ void Controller::actionNodeTurtleFunction(Nodes::ActionNode *actionNode) {
     auto node = dynamic_cast<Nodes::TurtleNode*>(actionNode);
 
     int inst = node->getInstruction();
+    if (inst < 0) return;
     int pvint = node->getParamValue();
     string pv = to_string(pvint);
 
     string colors[8] = {"white", "black", "red", "green", "blue", "cyan", "yellow", "magenta"};
 
     ofstream  turtleFile;
-    if (!turtleStarted && inst != -1) {
+    if (!turtleStarted) {
         turtleFile = ofstream("..\\" + name + "_turtle.py");
         turtleFile << "from turtle import *\nsetup(width=1.0, height=1.0)\n\n";
         turtleStarted = true;
@@ -1599,9 +1600,6 @@ void Controller::actionNodeTurtleFunction(Nodes::ActionNode *actionNode) {
     }
 
     switch (inst) {
-        case -1:
-            turtleFile.close();
-            return;
         case 0:
             turtleFile << "forward(" + pv + ")\n";
             break;
