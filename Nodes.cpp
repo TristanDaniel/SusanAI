@@ -647,7 +647,8 @@ void TurtleNode::getOutput(unsigned long long int curTurn) {
         case 13:
         case 14:
         case 15:
-            paramValue =  1 + (int)(abs(pv) * 8) % 8;
+        case 16:
+            paramValue = (int)(abs(pv) * 8) % 8;
             break;
         default:
             paramValue = 0;
@@ -671,4 +672,22 @@ void TurtleNode::addSynapse(Synapses::Synapse *syn) {
 
 int TurtleNode::getInstruction() const { return instruction; }
 int TurtleNode::getParamValue() const { return paramValue; }
+
+void NodeWithSecondaryInput::setSecondaryInput(Synapses::Synapse *syn) {
+    secondaryInput = syn;
+}
+bool NodeWithSecondaryInput::removeSecondaryInput(Synapses::Synapse *syn) {
+    if (secondaryInput == syn) {
+        secondaryInput = nullptr;
+        return true;
+    }
+
+    return false;
+}
+
+void NodeWithSecondaryInput::removeSynapse(Synapses::Synapse *syn) {
+    if (removeSecondaryInput(syn)) return;
+    Node::removeSynapse(syn);
+}
+
 

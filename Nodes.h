@@ -58,7 +58,7 @@ namespace Nodes {
 
 		virtual void addSynapse(Synapses::Synapse* syn);
         void addOutputSynapse(Synapses::Synapse*  syn);
-		void removeSynapse(Synapses::Synapse* syn);
+		virtual void removeSynapse(Synapses::Synapse* syn);
         void removeOutputSynapse(Synapses::Synapse* syn);
 
         bool isUnused();
@@ -353,14 +353,21 @@ namespace Nodes {
         int getParamValue() const;
     };
 
-    class NodeWithSecondaryInput : NotInputNode {
+    class NodeWithSecondaryInput : public NotInputNode {
 
     protected:
-        Synapses::Synapse* secondaryInput;
+        Synapses::Synapse* secondaryInput = nullptr;
 
     public:
 
         void setSecondaryInput(Synapses::Synapse* syn);
+        bool removeSecondaryInput(Synapses::Synapse* syn);
+
+        void removeSynapse(Synapses::Synapse* syn) override;
+    };
+
+    class GatedNode : public NodeWithSecondaryInput {
+
 
     };
 
