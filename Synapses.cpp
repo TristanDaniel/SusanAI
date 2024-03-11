@@ -4,7 +4,6 @@ using namespace std;
 using Synapses::Synapse;
 using Synapses::PassthroughSynapse;
 using Synapses::WeightedSynapse;
-using Synapses::GatedSynapse;
 
 PassthroughSynapse::PassthroughSynapse(unsigned int i) { id = i; }
 PassthroughSynapse::PassthroughSynapse(unsigned int i, Nodes::Node *inNode) { id = i; input = inNode; }

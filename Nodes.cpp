@@ -255,23 +255,21 @@ void Node::totalSave(ofstream& saveFile) {
 
 }
 
-void Node::graphSave(std::ofstream &graphFile, std::ofstream& graphFile2) {
+void Node::graphSave(std::ofstream &graphFile) {
     graphFile << "\"" + to_string(getID()) + "\"\n";
-    graphFile2 << "\"" + to_string(getID()) + "\"\n";
     if (outputs.empty()) return;
     bool withOutput = false;
     string listString;
-    string listString2 = "\"" + to_string(getID()) + "\" -> {";
     for (auto syn : outputs) {
         Node* o = syn->getOutput();
         if (o) {
             withOutput = true;
-            graphFile << "\"" + to_string(getID()) + "\" -> \"" + to_string(o->getID()) + "\"\n";
-            listString2 += " \"" + to_string(o->getID()) + "\"";
-
+            graphFile << "\"" + to_string(getID()) + "\" -> \"" + to_string(o->getID());
+            if (dynamic_cast<GatedNode*>(o) &&
+                dynamic_cast<GatedNode*>(o)->getSecondaryInput() == syn) graphFile << "\" [color=\"red\"]\n";
+            else graphFile << "\"\n";
         }
     }
-    if (withOutput) graphFile2 << listString2 + "}\n";
 }
 
 string NotInputNode::saveNode() {
@@ -674,7 +672,9 @@ int TurtleNode::getInstruction() const { return instruction; }
 int TurtleNode::getParamValue() const { return paramValue; }
 
 void NodeWithSecondaryInput::setSecondaryInput(Synapses::Synapse *syn) {
+    if (secondaryInput) secondaryInput->setOutput(nullptr);
     secondaryInput = syn;
+    syn->setOutput(this);
 }
 bool NodeWithSecondaryInput::removeSecondaryInput(Synapses::Synapse *syn) {
     if (secondaryInput == syn) {
@@ -690,4 +690,33 @@ void NodeWithSecondaryInput::removeSynapse(Synapses::Synapse *syn) {
     Node::removeSynapse(syn);
 }
 
+float GatedNode::getValue(unsigned long long curTurn) {
+    if (secondaryInput != nullptr && secondaryInput->getData(curTurn) < 0) {
+        lastValue = 0;
+        value = 0;
+        return 0;
+    }
 
+    return NotInputNode::getValue(curTurn);
+}
+
+void GatedNode::graphSave(std::ofstream &graphFile) {
+    graphFile << "\"" + to_string(getID()) + "\" [color=\"red\"]\n";
+    if (outputs.empty()) return;
+    bool withOutput = false;
+    string listString;
+    for (auto syn : outputs) {
+        Node* o = syn->getOutput();
+        if (o) {
+            withOutput = true;
+            graphFile << "\"" + to_string(getID()) + "\" -> \"" + to_string(o->getID()) + "\"\n";
+
+        }
+    }
+
+//    if (secondaryInput && secondaryInput->getInput()) {
+//        graphFile << "\"" + to_string(secondaryInput->getInput()->getID()) + "\" -> \"" + to_string(getID()) + "\" [color=\"red\"]\n";
+//    }
+}
+
+Synapses::Synapse* NodeWithSecondaryInput::getSecondaryInput() { return secondaryInput; }

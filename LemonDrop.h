@@ -21,6 +21,7 @@ namespace LemonDrop {
         Handlers::NodeHandler fireables;
         Handlers::NodeHandler valueInputs;
         Handlers::NodeHandler unusedNodes;
+        Handlers::NodeHandler nodesWithSecondaryInput;
 
         std::vector<UtilClasses::ActionGroup*> actionGroups;
         UtilClasses::ActionGroup baseAG1, baseAG2, extraAG, turtleAG;
@@ -74,6 +75,8 @@ namespace LemonDrop {
 
         bool addSynapseToNode(unsigned int synID, unsigned int nodeID, bool loading);
         bool addSynapseToNode(unsigned int synID, bool uuSyn, unsigned int nodeID, bool uuNode, bool loading);
+        bool addSynapseToNodeSecondary(unsigned int synID, unsigned int nodeID, bool loading);
+        bool addSynapseToNodeSecondary(unsigned int synID, bool uuSyn, unsigned int nodeID, bool uuNode, bool loading);
         bool addNodeToSynapse(unsigned int nodeID, unsigned int synID, bool loading);
         bool addNodeToSynapse(unsigned int nodeID, bool uuNode, unsigned int synID, bool uuSyn, bool loading);
 

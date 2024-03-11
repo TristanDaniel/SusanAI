@@ -265,6 +265,8 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
                     break;
                 case 5:
                     n = new Nodes::UpdateWeightNode(id, threshold);
+                case 6:
+                    n = new Nodes::TurtleNode(id, threshold);
                 default:
                     // invalid input punished with do nothing action
                     n = new Nodes::ActionNode(id, threshold, 0);
@@ -276,6 +278,25 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
             unusedNodes.addNode(n);
 
             extraAG.addNode(dynamic_cast<Nodes::ActionNode *>(n));
+
+            saveActionToFile(n->saveNode());
+
+            //cout << n->saveNode() << endl;
+
+            return true;
+        }
+        case 6:
+        {
+            // gated node
+            id = nodes.getNextID();
+
+            n = new Nodes::GatedNode(id);
+
+            n->addFlag(params.basicNodeParams.cycleFlag);
+
+            nodes.addNode(n);
+            nodesWithSecondaryInput.addNode(n);
+            unusedNodes.addNode(n);
 
             saveActionToFile(n->saveNode());
 
@@ -394,6 +415,42 @@ bool Controller::addSynapseToNode(unsigned int synID, bool uuSyn, unsigned int n
     if (nodeuu && !node->isUnused()) unusedNodes.removeNodeByID(nodeID);
 
     string saveString = ">sn " + to_string(synapse->getID()) + " " + to_string(node->getID()) + " ";
+
+    if (!loading) {
+        saveActionToFile(saveString);
+        //cout << saveString << endl;
+    }
+
+    return true;
+}
+
+bool Controller::addSynapseToNodeSecondary(unsigned int synID, unsigned int nodeID, bool loading) {
+    return addSynapseToNode(synID, false, nodeID, false, loading);
+}
+bool Controller::addSynapseToNodeSecondary(unsigned int synID, bool uuSyn, unsigned int nodeID, bool uuNode, bool loading) {
+    Synapses::Synapse* synapse = uuSyn ? unusedSynapses.getSynapseByCount(synID)
+                                       : synapses.getSynapseByID(synID);
+    Nodes::Node* node = loading ? nodes.getNodeByID(nodeID)
+                               : nodesWithSecondaryInput.getNodeByCount(nodeID);
+
+    bool synuu = synapse->isUnused();
+    bool nodeuu = node->isUnused();
+
+    Nodes::Node* prevSynOutput = synapse->getOutput();
+    if ((Nodes::ActionNode*)prevSynOutput) {
+        brokeActionNode = true;
+        return false;
+    }
+
+    ((Nodes::NodeWithSecondaryInput*)node)->setSecondaryInput(synapse);
+
+    if (prevSynOutput && prevSynOutput->isUnused()) unusedNodes.addNode(prevSynOutput);
+
+    if (synuu && !synapse->isUnused()) unusedSynapses.removeSynapseByID(synID);
+    else if (!synuu && synapse->isUnused()) unusedSynapses.addSynapse(synapse);
+    if (nodeuu && !node->isUnused()) unusedNodes.removeNodeByID(nodeID);
+
+    string saveString = ">sn2 " + to_string(synapse->getID()) + " " + to_string(node->getID()) + " ";
 
     if (!loading) {
         saveActionToFile(saveString);
@@ -738,6 +795,21 @@ void Controller::loadFromFile() {
                     unusedNodes.addNode(n);
                     nodes.checkID(id);
 
+                } else if (infobit == "+n6") {
+                    // gated node
+                    ss >> id;
+                    ss >> cycleFlag;
+                    ss >> dropoutFlag;
+
+                    n = new Nodes::GatedNode(id);
+
+                    n->addFlag(static_cast<Flags::NodeFlag>(cycleFlag));
+                    n->addFlag(static_cast<Flags::NodeFlag>(dropoutFlag));
+
+                    nodes.addNode(n);
+                    nodesWithSecondaryInput.addNode(n);
+                    unusedNodes.addNode(n);
+                    nodes.checkID(id);
                 } else if (infobit == "+s0") {
                     //passthrough syn
                     ss >> id;
@@ -769,6 +841,12 @@ void Controller::loadFromFile() {
 //                    }
 
                     addSynapseToNode(id1, id2, true);
+                } else if (infobit == ">sn2") {
+                    int id1, id2;
+                    ss >> id1;
+                    ss >> id2;
+
+                    addSynapseToNodeSecondary(id1, id2, true);
                 } else if (infobit == ">ns") {
                     int id1, id2;
                     ss >> id1;
@@ -924,7 +1002,7 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 0:
         {
             if (unusedNodes.getNumItems() == 0) uu1 = false;
-            //if (unusedNodes.getNumItems() > 10) uu1 = true;
+            if (unusedNodes.getNumItems() > 10) uu1 = true;
             if (unusedSynapses.getNumItems() == 0) uu2 = false;
             if (unusedSynapses.getNumItems() > 5) uu2 = true;
 
@@ -941,7 +1019,7 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 1:
         {
             if (unusedNodes.getNumItems() == 0) uu2 = false;
-            //if (unusedNodes.getNumItems() > 10) uu2 = true;
+            if (unusedNodes.getNumItems() > 10) uu2 = true;
             if (unusedSynapses.getNumItems() == 0) uu1 = false;
             if (unusedSynapses.getNumItems() > 5) uu1 = true;
 
@@ -957,11 +1035,11 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 2:
         {
             if (unusedNodes.getNumItems() == 0) uu1 = false;
-            //if (unusedNodes.getNumItems() > 10) uu1 = true;
+            if (unusedNodes.getNumItems() > 10) uu1 = true;
             if (unusedSynapses.getNumItems() == 0) uu2 = false;
             if (unusedSynapses.getNumItems() > 5) uu2 = true;
             if (unusedNodes.getNumItems() == 0) uu3 = false;
-            //if (unusedNodes.getNumItems() > 10) uu3 = true;
+            if (unusedNodes.getNumItems() > 10) uu3 = true;
 
             unsigned int nodeIDLimVal = uu1 ? unusedNodes.getNumItems() : nodes.getCurrID();
             unsigned int synIDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();
@@ -1008,6 +1086,23 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
             if (s1uu && !s1->isUnused()) unusedSynapses.removeSynapseByID(synID);
             if (s2uu && !s2->isUnused()) unusedSynapses.removeSynapseByID(syn2ID);
 
+            break;
+        }
+        case 4:
+        {
+            // syn to secondary input
+            if (nodesWithSecondaryInput.getNumItems() == 0) break;
+
+            if (unusedSynapses.getNumItems() == 0) uu1 = false;
+            if (unusedSynapses.getNumItems() > 5) uu1 = true;
+
+            unsigned int synIDLimVal = uu1 ? unusedSynapses.getNumItems() : synapses.getCurrID();
+            unsigned int nodeIDLimVal = nodesWithSecondaryInput.getNumItems();
+
+            unsigned int synID = (unsigned int)(id1 * (float)synIDLimVal) % synIDLimVal;
+            unsigned int nodeID = (unsigned int)(id2 * (float)nodeIDLimVal) % nodeIDLimVal;
+
+            addSynapseToNodeSecondary(synID, uu1, nodeID, false, false);
             break;
         }
         default:
@@ -1245,6 +1340,12 @@ void Controller::generateInitialController() {
         outputs.addNode(n);
         unusedNodes.addNode(n);
     }
+
+    // adding a gated node just to play with it
+    n = new Nodes::GatedNode(nodes.getNextID());
+    nodes.addNode(n);
+    nodesWithSecondaryInput.addNode(n);
+    unusedNodes.addNode(n);
 }
 
 float Controller::getUnusedPartFitnessImpact() {
@@ -1470,27 +1571,20 @@ void Controller::totalSave() {
 void Controller::totalSave(const std::string& fileName) {
     std::ofstream saveFile("..\\" + fileName + ".lsv");
     std::ofstream graphFile("..\\" + fileName + ".graph");
-    std::ofstream graphFile2("..\\" + fileName + "_comp.graph");
 
     graphFile << "digraph m {\n"
                  "sep=0\n"
                  "layout=\"neato\"\n"
                  "overlap=\"scale\"\n"
                  "node[width=.25,height=.375,fontsize=9]\n";
-    graphFile2 << "digraph m {\n"
-                 "sep=0\n"
-                 "layout=\"neato\"\n"
-                 "overlap=\"scale\"\n"
-                 "node[width=.25,height=.375,fontsize=9]\n";
 
     for (auto n : nodes.getNodes()) {
-        n->graphSave(graphFile, graphFile2);
+        n->graphSave(graphFile);
         if (n->getID() < 11) continue;
         n->totalSave(saveFile);
     }
 
     graphFile << "}";
-    graphFile2 << "}";
 
     saveFile << endl;
 

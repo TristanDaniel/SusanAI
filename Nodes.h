@@ -65,7 +65,7 @@ namespace Nodes {
 
         virtual std::string saveNode() = 0;
         void totalSave(std::ofstream& saveFile);
-        void graphSave(std::ofstream& graphFile, std::ofstream& graphFile2);
+        virtual void graphSave(std::ofstream& graphFile);
 	};
 
 	class NotInputNode : public Node {
@@ -359,18 +359,25 @@ namespace Nodes {
         Synapses::Synapse* secondaryInput = nullptr;
 
     public:
+        explicit NodeWithSecondaryInput(unsigned int i) : NotInputNode(i) {};
 
         void setSecondaryInput(Synapses::Synapse* syn);
         bool removeSecondaryInput(Synapses::Synapse* syn);
 
         void removeSynapse(Synapses::Synapse* syn) override;
+
+        Synapses::Synapse* getSecondaryInput();
     };
 
     class GatedNode : public NodeWithSecondaryInput {
 
+    public:
+        explicit GatedNode(unsigned int i) : NodeWithSecondaryInput(i) {};
 
+        void graphSave(std::ofstream& graphFile) override;
+
+        float getValue(unsigned long long int curTurn) override;
     };
-
 
 }
 
