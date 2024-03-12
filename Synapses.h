@@ -18,6 +18,10 @@ namespace Synapses {
         bool totalSaving = false;
         unsigned long long int lastTotalSave;
 
+        std::string baseColor;
+
+        Flags::SynapseOutputTypeFlag outputTypeFlag = Flags::SynapseOutputTypeFlag::STANDARD;
+
 	public:
 
 		Synapse() = default;
@@ -36,6 +40,11 @@ namespace Synapses {
 
         virtual std::string saveSynapse() = 0;
         void totalSave(std::ofstream& saveFile, std::ofstream& graphFile);
+
+        void setOutputTypeFlag(Flags::SynapseOutputTypeFlag flag);
+        Flags::SynapseOutputTypeFlag getOutputTypeFlag();
+
+        std::string getBaseColor();
 
 		bool operator==(const Synapse& s) const;
 	};

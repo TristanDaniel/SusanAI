@@ -37,8 +37,10 @@ Nodes::ActionNode* UtilClasses::ActionGroup::getActionNode(unsigned long long in
 
     for (auto n : nodes) {
         float v = n->getValue(curTurn);
-        if (v > highestValue) {
-            highestValue = v;
+        if (v <= 0) continue;
+        float fireMargin = v - n->getThreshold();
+        if (fireMargin > highestValue) {
+            highestValue = fireMargin;
             firingNode = n;
         }
     }

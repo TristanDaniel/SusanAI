@@ -23,7 +23,7 @@ using Flags::NodeFlag;
 
 
 Node::Node(unsigned int i) : Structures::Part(i), turn(0), value(0), lastValue(0) {}
-Input::Input(unsigned int i) : Node(i) {}
+Input::Input(unsigned int i) : Node(i) { baseColor = "blue"; }
 
 float NotInputNode::getValue(unsigned long long int curTurn) {
     // If the map isn't empty, it means we reached this point in a cycle
@@ -184,6 +184,7 @@ void Node::removeFlag(Flags::NodeFlag f) {
 void Node::addSynapse(Synapses::Synapse* syn) {
     syn->setOutput(this);
     synapses.push_back(syn);
+    syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::STANDARD);
 }
 void Node::addOutputSynapse(Synapses::Synapse *syn) {
     outputs.push_back(syn);
@@ -218,6 +219,8 @@ RandomInput::RandomInput(unsigned int i, int m, float min, float max) : Input(i)
 		minimum = max;
 		maximum = min;
 	}
+
+    baseColor = "dodgerblue";
 }
 
 void Output::getOutput(unsigned long long int curTurn) {
@@ -256,18 +259,32 @@ void Node::totalSave(ofstream& saveFile) {
 }
 
 void Node::graphSave(std::ofstream &graphFile) {
-    graphFile << "\"" + to_string(getID()) + "\"\n";
+    graphFile << "\"" + to_string(getID()) + "\" [color=\"" + baseColor + "\"]\n";
     if (outputs.empty()) return;
-    bool withOutput = false;
+
     string listString;
     for (auto syn : outputs) {
         Node* o = syn->getOutput();
         if (o) {
-            withOutput = true;
-            graphFile << "\"" + to_string(getID()) + "\" -> \"" + to_string(o->getID());
-            if (dynamic_cast<GatedNode*>(o) &&
-                dynamic_cast<GatedNode*>(o)->getSecondaryInput() == syn) graphFile << "\" [color=\"red\"]\n";
-            else graphFile << "\"\n";
+            graphFile << "\"" + to_string(getID()) + "\" -> \"" + to_string(o->getID())
+                        + "\" [color=\"" + syn->getBaseColor();
+            switch (syn->getOutputTypeFlag()) {
+                case Flags::SynapseOutputTypeFlag::STANDARD:
+                    break;
+                case Flags::SynapseOutputTypeFlag::PARAMETER:
+                    graphFile << ":magenta";
+                    break;
+                case Flags::SynapseOutputTypeFlag::SECONDARY:
+                    graphFile << ":red";
+                default:
+                    break;
+            }
+
+            graphFile << "\"]\n";
+
+//            if (dynamic_cast<GatedNode*>(o) &&
+//                dynamic_cast<GatedNode*>(o)->getSecondaryInput() == syn) graphFile << "\" [color=\"red\"]\n";
+//            else graphFile << "\"\n";
         }
     }
 }
@@ -320,7 +337,7 @@ bool ActionNode::checkFire() {
     return sigmoidValue >= fireThreshold;
 }
 
-ActionNode::ActionNode(unsigned int i, float t, int type) : Output(i), Fireable(t), actionType((Flags::ActionFlag)type) {}
+ActionNode::ActionNode(unsigned int i, float t, int type) : Output(i), Fireable(t), actionType((Flags::ActionFlag)type) { baseColor = "darkslategray"; }
 
 Flags::ActionFlag ActionNode::getActionType() { return actionType; }
 
@@ -395,41 +412,49 @@ void AddNodeNode::addSynapse(Synapses::Synapse *syn) {
     if (!nodeTypeInput) {
         nodeTypeInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!cycleFlagInput) {
         cycleFlagInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!valueInput) {
         valueInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!modeInput) {
         modeInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!minInput) {
         minInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!maxInput) {
         maxInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!thresholdInput) {
         thresholdInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!thresholdInput) {
         thresholdInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
 
@@ -440,11 +465,13 @@ void AddSynapseNode::addSynapse(Synapses::Synapse *syn) {
     if (!synTypeInput) {
         synTypeInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!weightInput) {
         weightInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
 
@@ -468,36 +495,43 @@ void MakeConnectionNode::addSynapse(Synapses::Synapse *syn) {
     if (!connectionTypeInput) {
         connectionTypeInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!id1Input) {
         id1Input = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!uu1Input){
         uu1Input = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!id2Input) {
         id2Input = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!uu2Input){
         uu2Input = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!id3Input) {
         id3Input = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!uu3Input){
         uu3Input = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
 
@@ -523,11 +557,13 @@ void SetFlagNode::addSynapse(Synapses::Synapse *syn) {
     if (!targetIDInput) {
         targetIDInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!flagValInput) {
         flagValInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
 
@@ -539,7 +575,16 @@ int SetFlagNode::getFlagVal() const { return flagVal; }
 
 
 bool Node::isUnused() {
-    return !(synapses.empty() || outputs.empty());
+    if (synapses.empty() && outputs.empty()) return true;
+
+    for (auto syn : synapses) {
+        if (!syn->isUnused()) return false;
+    }
+    for (auto syn : outputs) {
+        if (!syn->isUnused()) return false;
+    }
+
+    return true;
 }
 
 void Node::removeOutputSynapse(Synapses::Synapse *syn) {
@@ -559,16 +604,19 @@ void UpdateWeightNode::addSynapse(Synapses::Synapse *syn) {
     if (!targetIDInput) {
         targetIDInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!weightModifierInput) {
         weightModifierInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!replaceWeightInput) {
         replaceWeightInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
 
@@ -592,16 +640,19 @@ void UpdateNodeValueNode::addSynapse(Synapses::Synapse *syn) {
     if (!targetIDInput) {
         targetIDInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!valueModifierInput) {
         valueModifierInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!replaceValueInput) {
         replaceValueInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
 
@@ -657,11 +708,13 @@ void TurtleNode::addSynapse(Synapses::Synapse *syn) {
     if (!instructionInput) {
         instructionInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
     if (!paramValueInput) {
         paramValueInput = syn;
         syn->setOutput(this);
+        syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::PARAMETER);
         return;
     }
 
@@ -675,6 +728,7 @@ void NodeWithSecondaryInput::setSecondaryInput(Synapses::Synapse *syn) {
     if (secondaryInput) secondaryInput->setOutput(nullptr);
     secondaryInput = syn;
     syn->setOutput(this);
+    syn->setOutputTypeFlag(Flags::SynapseOutputTypeFlag::SECONDARY);
 }
 bool NodeWithSecondaryInput::removeSecondaryInput(Synapses::Synapse *syn) {
     if (secondaryInput == syn) {
@@ -700,23 +754,8 @@ float GatedNode::getValue(unsigned long long curTurn) {
     return NotInputNode::getValue(curTurn);
 }
 
-void GatedNode::graphSave(std::ofstream &graphFile) {
-    graphFile << "\"" + to_string(getID()) + "\" [color=\"red\"]\n";
-    if (outputs.empty()) return;
-    bool withOutput = false;
-    string listString;
-    for (auto syn : outputs) {
-        Node* o = syn->getOutput();
-        if (o) {
-            withOutput = true;
-            graphFile << "\"" + to_string(getID()) + "\" -> \"" + to_string(o->getID()) + "\"\n";
-
-        }
-    }
-
-//    if (secondaryInput && secondaryInput->getInput()) {
-//        graphFile << "\"" + to_string(secondaryInput->getInput()->getID()) + "\" -> \"" + to_string(getID()) + "\" [color=\"red\"]\n";
-//    }
-}
-
 Synapses::Synapse* NodeWithSecondaryInput::getSecondaryInput() { return secondaryInput; }
+
+float Fireable::getThreshold() const { return fireThreshold; }
+
+

@@ -28,6 +28,12 @@ namespace Flags {
         TURTLE
     };
 
+    enum class SynapseOutputTypeFlag {
+        STANDARD,
+        PARAMETER,
+        SECONDARY
+    };
+
 }
 
 namespace ParamPackages {

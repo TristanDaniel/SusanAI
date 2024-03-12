@@ -11,7 +11,7 @@ using LemonDrop::Controller;
 
 int main()
 {
-    Controller c("gate_test", true, false, false);
+    Controller c("gate_test", true, false, true);
     //Controller c("byte", (string)"byte_post_training", false, true);
     //c.addTurtleInterface();
     c.mainLoop(5000);

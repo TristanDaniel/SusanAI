@@ -5,11 +5,11 @@ using Synapses::Synapse;
 using Synapses::PassthroughSynapse;
 using Synapses::WeightedSynapse;
 
-PassthroughSynapse::PassthroughSynapse(unsigned int i) { id = i; }
+PassthroughSynapse::PassthroughSynapse(unsigned int i) { id = i; baseColor = "cornflowerblue"; }
 PassthroughSynapse::PassthroughSynapse(unsigned int i, Nodes::Node *inNode) { id = i; input = inNode; }
 
 WeightedSynapse::WeightedSynapse(unsigned int i) { id = i; }
-WeightedSynapse::WeightedSynapse(unsigned int i, float w) : weight(w)  { id = i; }
+WeightedSynapse::WeightedSynapse(unsigned int i, float w) : weight(w)  { id = i; baseColor = "chartreuse3"; }
 WeightedSynapse::WeightedSynapse(unsigned int i, Nodes::Node* inNode, float w) : weight(w) { id = i; input = inNode; }
 
 
@@ -76,4 +76,9 @@ void Synapse::totalSave(std::ofstream& saveFile, std::ofstream& graphFile) {
     //lastTotalSave = DataBits::getTurn();
     //totalSaving = false;
 }
+
+void Synapse::setOutputTypeFlag(Flags::SynapseOutputTypeFlag flag) { outputTypeFlag = flag; }
+Flags::SynapseOutputTypeFlag Synapse::getOutputTypeFlag() { return outputTypeFlag; }
+
+string Synapse::getBaseColor() { return baseColor; }
 

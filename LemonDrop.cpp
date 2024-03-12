@@ -588,7 +588,6 @@ void Controller::getAllOutputs() {
 void Controller::loop() {
     if (verboseActionsMode) cout << "loop : " << to_string(turn) << endl;
 
-    turn++;
     //cout << to_string(turn) << endl;
 
     setMetricInputs();
@@ -1274,12 +1273,12 @@ void Controller::generateInitialController() {
     saveActionToFile(makeConOutput->saveNode());
     nodes.addNode(makeConOutput);
     outputs.addNode(makeConOutput);
-    baseAG2.addNode((Nodes::ActionNode*)makeConOutput);
+    baseAG1.addNode((Nodes::ActionNode*)makeConOutput);
     Nodes::Node* setFlagOutput = new Nodes::SetFlagNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(setFlagOutput->saveNode());
     nodes.addNode(setFlagOutput);
     outputs.addNode(setFlagOutput);
-    baseAG1.addNode((Nodes::ActionNode*)setFlagOutput);
+    baseAG2.addNode((Nodes::ActionNode*)setFlagOutput);
     Nodes::Node* updateWeightOutput = new Nodes::UpdateWeightNode(nodes.getNextID(), LDRandomFloat());
     saveActionToFile(updateWeightOutput->saveNode());
     nodes.addNode(updateWeightOutput);

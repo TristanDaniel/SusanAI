@@ -39,6 +39,8 @@ namespace Nodes {
 
         std::string getFlagListString();
 
+        std::string baseColor;
+
 	public:
 		
 		Node()= default;
@@ -70,7 +72,7 @@ namespace Nodes {
 
 	class NotInputNode : public Node {
 	public:
-        explicit NotInputNode(unsigned int i) : Node(i) {};
+        explicit NotInputNode(unsigned int i) : Node(i) { baseColor = "black"; };
 
 		float getValue(unsigned long long int curTurn) override;
         float getValueInLoop(std::unordered_map<unsigned int, char> statChecks) override;
@@ -132,7 +134,7 @@ namespace Nodes {
 
 	public:
 
-        explicit Output(unsigned int i) : NotInputNode(i) {}
+        explicit Output(unsigned int i) : NotInputNode(i) { baseColor = "firebrick"; }
 
 		virtual void getOutput(unsigned long long int curTurn);
 
@@ -151,6 +153,7 @@ namespace Nodes {
         explicit Fireable(float t);
 
         void setThreshold(float t);
+        float getThreshold() const;
     };
 
     class FireableNode : public Nodes::NotInputNode, public Nodes::Fireable {
@@ -159,7 +162,7 @@ namespace Nodes {
         bool checkFire() override;
 
     public:
-        FireableNode(unsigned int i, float t) : Nodes::NotInputNode(i), Nodes::Fireable(t) {}
+        FireableNode(unsigned int i, float t) : Nodes::NotInputNode(i), Nodes::Fireable(t) { baseColor = "goldenrod"; }
 
         float getValue(unsigned long long int curTurn) override;
 
@@ -204,7 +207,7 @@ namespace Nodes {
 
     public:
 
-        AddNodeNode(unsigned int i, float t) : ActionNode(i, t, 1) {}
+        AddNodeNode(unsigned int i, float t) : ActionNode(i, t, 1) { baseColor = "olivedrab"; }
 
         void getOutput(unsigned long long int curTurn) override;
 
@@ -227,7 +230,7 @@ namespace Nodes {
                          * weightInput = nullptr;
 
     public:
-        AddSynapseNode(unsigned int i, float t) : ActionNode(i, t, 2) {}
+        AddSynapseNode(unsigned int i, float t) : ActionNode(i, t, 2) { baseColor = "olivedrab2"; }
 
         void getOutput(unsigned long long int curTurn) override;
 
@@ -253,7 +256,7 @@ namespace Nodes {
                          * uu3Input = nullptr;
 
     public:
-        MakeConnectionNode(unsigned int i, float t) : ActionNode(i, t, 3) {}
+        MakeConnectionNode(unsigned int i, float t) : ActionNode(i, t, 3) { baseColor = "mistyrose3"; }
 
         void getOutput(unsigned long long int curTurn) override;
 
@@ -279,7 +282,7 @@ namespace Nodes {
                          * flagValInput = nullptr;
 
     public:
-        SetFlagNode(unsigned int i, float t) : ActionNode(i, t, 4) {}
+        SetFlagNode(unsigned int i, float t) : ActionNode(i, t, 4) { baseColor = "palegreen2"; }
 
         void getOutput(unsigned long long int curTurn) override;
 
@@ -300,7 +303,7 @@ namespace Nodes {
                          * replaceWeightInput = nullptr;
 
     public:
-        UpdateWeightNode(unsigned int i, float t) : ActionNode(i, t, 5) {}
+        UpdateWeightNode(unsigned int i, float t) : ActionNode(i, t, 5) { baseColor = "plum"; }
 
         void getOutput(unsigned long long int curTurn) override;
 
@@ -323,7 +326,7 @@ namespace Nodes {
                 * replaceValueInput = nullptr;
 
     public:
-        UpdateNodeValueNode(unsigned int i, float t) : ActionNode(i, t, 6) {}
+        UpdateNodeValueNode(unsigned int i, float t) : ActionNode(i, t, 6) { baseColor = "sienna2"; }
 
         void getOutput(unsigned long long int curTurn) override;
 
@@ -343,7 +346,7 @@ namespace Nodes {
                          * paramValueInput = nullptr;
 
     public:
-        TurtleNode(unsigned int i, float t) : ActionNode(i, t, 7) {}
+        TurtleNode(unsigned int i, float t) : ActionNode(i, t, 7) { baseColor = "webgreen"; }
 
         void getOutput(unsigned long long int curTurn) override;
 
@@ -359,7 +362,7 @@ namespace Nodes {
         Synapses::Synapse* secondaryInput = nullptr;
 
     public:
-        explicit NodeWithSecondaryInput(unsigned int i) : NotInputNode(i) {};
+        explicit NodeWithSecondaryInput(unsigned int i) : NotInputNode(i) { baseColor = "grey43"; };
 
         void setSecondaryInput(Synapses::Synapse* syn);
         bool removeSecondaryInput(Synapses::Synapse* syn);
@@ -372,12 +375,14 @@ namespace Nodes {
     class GatedNode : public NodeWithSecondaryInput {
 
     public:
-        explicit GatedNode(unsigned int i) : NodeWithSecondaryInput(i) {};
+        explicit GatedNode(unsigned int i) : NodeWithSecondaryInput(i) { baseColor = "red"; };
 
-        void graphSave(std::ofstream& graphFile) override;
+        // void graphSave(std::ofstream& graphFile) override;
 
         float getValue(unsigned long long int curTurn) override;
     };
+
+
 
 }
 
