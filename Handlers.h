@@ -19,7 +19,7 @@ namespace Handlers{
         unsigned int getNextID();
         void checkID(unsigned int id);
 
-        [[nodiscard]] int getNumItems() const;
+        [[nodiscard]] virtual int getNumItems() const = 0;
     };
 
     class NodeHandler : public Handler {
@@ -42,6 +42,8 @@ namespace Handlers{
         Nodes::Node* getNodeByCount(unsigned int idx);
 
         std::vector<Nodes::Node*> getNodes();
+
+        [[nodiscard]] int getNumItems() const override;
     };
 
     class SynapseHandler : public Handler {
@@ -64,5 +66,7 @@ namespace Handlers{
         Synapses::Synapse* getSynapseByCount(unsigned int idx);
 
         std::vector<Synapses::Synapse*> getSynapses();
+
+        [[nodiscard]] int getNumItems() const override;
     };
 }

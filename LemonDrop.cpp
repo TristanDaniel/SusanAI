@@ -545,10 +545,18 @@ void Controller::getAllOutputs() {
                 if (verboseActionsMode) cout << "Doing nothing" << endl;
                 break;
             case Flags::ActionFlag::ADD_NODE:
+                if (unusedNodes.getNumItems() > 15) {
+                    actionType = Flags::ActionFlag::DO_NOTHING;
+                    break;
+                }
                 actionNodeAddNodeFunction(actionNode);
                 //turnsSinceStructureChange = 0;
                 break;
             case Flags::ActionFlag::ADD_SYNAPSE:
+                if (unusedSynapses.getNumItems() > 10) {
+                    actionType = Flags::ActionFlag::DO_NOTHING;
+                    break;
+                }
                 actionNodeAddSynapseFunction(actionNode);
                 //turnsSinceStructureChange = 0;
                 break;
@@ -1001,9 +1009,9 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 0:
         {
             if (unusedNodes.getNumItems() == 0) uu1 = false;
-            if (unusedNodes.getNumItems() > 10) uu1 = true;
+            //if (unusedNodes.getNumItems() > 10) uu1 = true;
             if (unusedSynapses.getNumItems() == 0) uu2 = false;
-            if (unusedSynapses.getNumItems() > 5) uu2 = true;
+            //if (unusedSynapses.getNumItems() > 5) uu2 = true;
 
             unsigned int nodeIDLimVal = uu1 ? unusedNodes.getNumItems() : nodes.getCurrID();
             unsigned int synIDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();
@@ -1018,9 +1026,9 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 1:
         {
             if (unusedNodes.getNumItems() == 0) uu2 = false;
-            if (unusedNodes.getNumItems() > 10) uu2 = true;
+            //if (unusedNodes.getNumItems() > 10) uu2 = true;
             if (unusedSynapses.getNumItems() == 0) uu1 = false;
-            if (unusedSynapses.getNumItems() > 5) uu1 = true;
+            //if (unusedSynapses.getNumItems() > 5) uu1 = true;
 
             unsigned int nodeIDLimVal = uu2 ? unusedNodes.getNumItems() : nodes.getCurrID();
             unsigned int synIDLimVal = uu1 ? unusedSynapses.getNumItems() : synapses.getCurrID();
@@ -1034,11 +1042,11 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 2:
         {
             if (unusedNodes.getNumItems() == 0) uu1 = false;
-            if (unusedNodes.getNumItems() > 10) uu1 = true;
+            //if (unusedNodes.getNumItems() > 10) uu1 = true;
             if (unusedSynapses.getNumItems() == 0) uu2 = false;
-            if (unusedSynapses.getNumItems() > 5) uu2 = true;
+            //if (unusedSynapses.getNumItems() > 5) uu2 = true;
             if (unusedNodes.getNumItems() == 0) uu3 = false;
-            if (unusedNodes.getNumItems() > 10) uu3 = true;
+            //if (unusedNodes.getNumItems() > 10) uu3 = true;
 
             unsigned int nodeIDLimVal = uu1 ? unusedNodes.getNumItems() : nodes.getCurrID();
             unsigned int synIDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();
@@ -1057,9 +1065,9 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
         case 3:
         {
             if (unusedSynapses.getNumItems() == 0) uu1 = false;
-            if (unusedSynapses.getNumItems() > 5) uu1 = true;
+            //if (unusedSynapses.getNumItems() > 5) uu1 = true;
             if (unusedSynapses.getNumItems() == 0) uu2 = false;
-            if (unusedSynapses.getNumItems() > 5) uu2 = true;
+            //if (unusedSynapses.getNumItems() > 5) uu2 = true;
 
             unsigned int synIDLimVal = uu1 ? unusedSynapses.getNumItems() : synapses.getCurrID();
             unsigned int syn2IDLimVal = uu2 ? unusedSynapses.getNumItems() : synapses.getCurrID();
@@ -1093,7 +1101,7 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
             if (nodesWithSecondaryInput.getNumItems() == 0) break;
 
             if (unusedSynapses.getNumItems() == 0) uu1 = false;
-            if (unusedSynapses.getNumItems() > 5) uu1 = true;
+            //if (unusedSynapses.getNumItems() > 5) uu1 = true;
 
             unsigned int synIDLimVal = uu1 ? unusedSynapses.getNumItems() : synapses.getCurrID();
             unsigned int nodeIDLimVal = nodesWithSecondaryInput.getNumItems();

@@ -67,7 +67,8 @@ Synapses::Synapse* SynapseHandler::getSynapseByID(unsigned int id) {
 
 void Handler::checkID(unsigned int id) { if (id >= nextID) nextID = id+1; }
 
-int Handler::getNumItems() const { return items; }
+int NodeHandler::getNumItems() const { return (int)nodes.size(); }
+int SynapseHandler::getNumItems() const { return (int)synapses.size(); }
 
 Nodes::Node* NodeHandler::getNodeByCount(unsigned int idx) {
     int i = 0;

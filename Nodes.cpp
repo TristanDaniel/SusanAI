@@ -745,7 +745,7 @@ void NodeWithSecondaryInput::removeSynapse(Synapses::Synapse *syn) {
 }
 
 float GatedNode::getValue(unsigned long long curTurn) {
-    if (secondaryInput != nullptr && secondaryInput->getData(curTurn) < 0) {
+    if (secondaryInput == nullptr || (secondaryInput->getInput() == this) || (secondaryInput->getData(curTurn) < 0)) {
         lastValue = 0;
         value = 0;
         return 0;
