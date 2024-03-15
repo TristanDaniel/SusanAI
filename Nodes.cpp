@@ -574,8 +574,149 @@ float SetFlagNode::getTargetID() const { return targetID; }
 int SetFlagNode::getFlagVal() const { return flagVal; }
 
 
-bool Node::isUnused() {
+bool NotInputNode::isUnused() {
     if (synapses.empty() && outputs.empty()) return true;
+
+    for (auto syn : synapses) {
+        if (!syn->isUnused()) return false;
+    }
+    for (auto syn : outputs) {
+        if (!syn->isUnused()) return false;
+    }
+
+    return true;
+}
+
+bool Input::isUnused() {
+    if (outputs.empty()) return true;
+
+    for (auto syn : outputs) {
+        if (!syn->isUnused()) return false;
+    }
+
+    return true;
+}
+
+bool Output::isUnused() {
+    if (synapses.empty()) return true;
+
+    for (auto syn : synapses) {
+        if (!syn->isUnused()) return false;
+    }
+
+    return true;
+}
+
+bool AddNodeNode::isUnused() {
+    if (synapses.empty() ||
+        nodeTypeInput == nullptr ||
+        cycleFlagInput == nullptr ||
+        valueInput == nullptr ||
+        modeInput == nullptr ||
+        minInput == nullptr ||
+        maxInput == nullptr ||
+        thresholdInput == nullptr ||
+        actionTypeInput == nullptr) {
+        return true;
+    }
+
+    for (auto syn : synapses) {
+        if (!syn->isUnused()) return false;
+    }
+
+    return true;
+}
+
+bool AddSynapseNode::isUnused() {
+    if (synapses.empty() ||
+        synTypeInput == nullptr ||
+        weightInput == nullptr) return true;
+
+    for (auto syn : synapses) {
+        if (!syn->isUnused()) return false;
+    }
+
+    return true;
+}
+
+bool MakeConnectionNode::isUnused() {
+    if (synapses.empty() ||
+        connectionTypeInput == nullptr ||
+        id1Input == nullptr ||
+        uu1Input == nullptr ||
+        id2Input == nullptr ||
+        uu2Input == nullptr ||
+        id3Input == nullptr ||
+        uu3Input == nullptr) return true;
+
+    for (auto syn : synapses) {
+        if (!syn->isUnused()) return false;
+    }
+
+    return true;
+}
+
+bool SetFlagNode::isUnused() {
+    if (synapses.empty() ||
+        targetIDInput == nullptr ||
+        flagValInput == nullptr) {
+        return true;
+    }
+
+    for (auto syn : synapses) {
+        if (!syn->isUnused()) return false;
+    }
+
+    return true;
+}
+
+bool UpdateWeightNode::isUnused() {
+    if (synapses.empty() ||
+        targetIDInput == nullptr ||
+        weightModifierInput == nullptr ||
+        replaceWeightInput == nullptr) {
+        return true;
+    }
+
+    for (auto syn : synapses) {
+        if (!syn->isUnused()) return false;
+    }
+
+    return true;
+}
+
+bool UpdateNodeValueNode::isUnused() {
+    if (synapses.empty() ||
+        targetIDInput == nullptr ||
+        valueModifierInput == nullptr ||
+        replaceValueInput == nullptr) {
+        return true;
+    }
+
+    for (auto syn : synapses) {
+        if (!syn->isUnused()) return false;
+    }
+
+    return true;
+}
+
+bool TurtleNode::isUnused() {
+    if (synapses.empty() ||
+        instructionInput == nullptr ||
+        paramValueInput == nullptr) {
+        return true;
+    }
+
+    for (auto syn : synapses) {
+        if (!syn->isUnused()) return false;
+    }
+
+    return true;
+}
+
+bool NodeWithSecondaryInput::isUnused() {
+    if ((synapses.empty() && outputs.empty()) ||
+        secondaryInput == nullptr) return true;
 
     for (auto syn : synapses) {
         if (!syn->isUnused()) return false;
@@ -667,7 +808,7 @@ bool UpdateNodeValueNode::replacingValue() const { return replaceValue; }
 void TurtleNode::getOutput(unsigned long long int curTurn) {
     if (value == 0) return;
 
-    instruction = instructionInput ? (int)(instructionInput->getData(curTurn) * 18) % 18 : -1;
+    instruction = instructionInput ? (int)(abs(instructionInput->getData(curTurn)) * 18) % 18 : -1;
 
     float pv = paramValueInput ? paramValueInput->getData(curTurn) : 0;
     switch (instruction) {
@@ -681,22 +822,19 @@ void TurtleNode::getOutput(unsigned long long int curTurn) {
             break;
         case 4:
         case 5:
-            paramValue =  -500 + (int)(abs(pv) * 1000) % 1000;
+            paramValue =  -250 + (int)(abs(pv) * 500) % 500;
             break;
         case 6:
             paramValue =  (int)(abs(pv) * 361) % 361;
             break;
         case 8:
         case 9:
-            paramValue =  1 + (int)(abs(pv) * 10) % 10;
-            break;
         case 12:
-            paramValue =  1 + (int)(abs(pv) * 100) % 100;
+            paramValue =  1 + (int)(abs(pv) * 10) % 10;
             break;
         case 13:
         case 14:
         case 15:
-        case 16:
             paramValue = (int)(abs(pv) * 8) % 8;
             break;
         default:
@@ -745,7 +883,19 @@ void NodeWithSecondaryInput::removeSynapse(Synapses::Synapse *syn) {
 }
 
 float GatedNode::getValue(unsigned long long curTurn) {
-    if (secondaryInput == nullptr || (secondaryInput->getInput() == this) || (secondaryInput->getData(curTurn) < 0)) {
+    if (secondaryInput == nullptr || checkingSecondaryInput) {
+        lastValue = 0;
+        value = 0;
+        return 0;
+    }
+
+    checkingSecondaryInput = true;
+
+    float secVal = secondaryInput->getData(curTurn);
+
+    checkingSecondaryInput = false;
+
+    if (secVal < 0) {
         lastValue = 0;
         value = 0;
         return 0;

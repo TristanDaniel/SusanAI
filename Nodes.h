@@ -63,7 +63,7 @@ namespace Nodes {
 		virtual void removeSynapse(Synapses::Synapse* syn);
         void removeOutputSynapse(Synapses::Synapse* syn);
 
-        bool isUnused();
+        virtual bool isUnused() = 0;
 
         virtual std::string saveNode() = 0;
         void totalSave(std::ofstream& saveFile);
@@ -78,6 +78,8 @@ namespace Nodes {
         float getValueInLoop(std::unordered_map<unsigned int, char> statChecks) override;
 
         std::string saveNode() override;
+
+        bool isUnused() override;
 	};
 
 	class Input : public Node {
@@ -89,6 +91,8 @@ namespace Nodes {
         float getValueInLoop(std::unordered_map<unsigned int, char> statChecks) override;
 
         std::string saveNode() override;
+
+        bool isUnused() override;
 	};
 
 	class RandomInput : public Input {
@@ -139,6 +143,8 @@ namespace Nodes {
 		virtual void getOutput(unsigned long long int curTurn);
 
         std::string saveNode() override;
+
+        bool isUnused() override;
 	};
 
     class Fireable {
@@ -153,7 +159,7 @@ namespace Nodes {
         explicit Fireable(float t);
 
         void setThreshold(float t);
-        float getThreshold() const;
+        [[nodiscard]] float getThreshold() const;
     };
 
     class FireableNode : public Nodes::NotInputNode, public Nodes::Fireable {
@@ -218,6 +224,8 @@ namespace Nodes {
         int getNodeType() const;
         ParamPackages::NodeParams getParams();
 
+        bool isUnused() override;
+
     };
 
     class AddSynapseNode : public ActionNode {
@@ -238,6 +246,8 @@ namespace Nodes {
 
         int getSynType() const;
         ParamPackages::SynapseParams getParams();
+
+        bool isUnused() override;
     };
 
     class MakeConnectionNode : public ActionNode {
@@ -269,6 +279,8 @@ namespace Nodes {
         bool getUU1() const;
         bool getUU2() const;
         bool getUU3() const;
+
+        bool isUnused() override;
     };
 
     class SetFlagNode : public ActionNode {
@@ -290,6 +302,8 @@ namespace Nodes {
 
         float getTargetID() const;
         int getFlagVal() const;
+
+        bool isUnused() override;
     };
 
     class UpdateWeightNode : public ActionNode {
@@ -313,6 +327,7 @@ namespace Nodes {
         float getWeightModifier() const;
         bool replacingWeight() const;
 
+        bool isUnused() override;
     };
 
     class UpdateNodeValueNode : public ActionNode {
@@ -335,6 +350,8 @@ namespace Nodes {
         float getTargetID() const;
         float getValueModifier() const;
         bool replacingValue() const;
+
+        bool isUnused() override;
     };
 
     class TurtleNode : public ActionNode {
@@ -354,12 +371,16 @@ namespace Nodes {
 
         int getInstruction() const;
         int getParamValue() const;
+
+        bool isUnused() override;
     };
 
     class NodeWithSecondaryInput : public NotInputNode {
 
     protected:
         Synapses::Synapse* secondaryInput = nullptr;
+
+        bool checkingSecondaryInput = false;
 
     public:
         explicit NodeWithSecondaryInput(unsigned int i) : NotInputNode(i) { baseColor = "grey43"; };
@@ -370,6 +391,8 @@ namespace Nodes {
         void removeSynapse(Synapses::Synapse* syn) override;
 
         Synapses::Synapse* getSecondaryInput();
+
+        bool isUnused() override;
     };
 
     class GatedNode : public NodeWithSecondaryInput {
@@ -382,6 +405,16 @@ namespace Nodes {
         float getValue(unsigned long long int curTurn) override;
     };
 
+    class LogicNode : public NodeWithSecondaryInput {
+
+    protected:
+        Flags::LogicOperatorFlag operatorFlag = Flags::LogicOperatorFlag::NOT;
+
+    public:
+        LogicNode(unsigned int i, Flags::LogicOperatorFlag opFlag);
+
+        float getValue(unsigned long long int curTurn) override;
+    };
 
 
 }

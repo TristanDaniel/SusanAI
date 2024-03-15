@@ -1683,11 +1683,12 @@ void Controller::actionNodeTurtleFunction(Nodes::ActionNode *actionNode) {
     auto node = dynamic_cast<Nodes::TurtleNode*>(actionNode);
 
     int inst = node->getInstruction();
+    cout << inst << endl;
     if (inst < 0) return;
     int pvint = node->getParamValue();
     string pv = to_string(pvint);
 
-    string colors[8] = {"white", "black", "red", "green", "blue", "cyan", "yellow", "magenta"};
+    string colors[8] = {"black", "white", "red", "green", "blue", "cyan", "yellow", "magenta"};
 
     ofstream  turtleFile;
     if (!turtleStarted) {
@@ -1697,7 +1698,7 @@ void Controller::actionNodeTurtleFunction(Nodes::ActionNode *actionNode) {
         turtleFilling = false;
         turtlePenDown = true;
     } else {
-        turtleFile = ofstream("\\" + name + "_turtle.py", std::ios::app);
+        turtleFile = ofstream("..\\" + name + "_turtle.py", std::ios::app);
     }
 
     switch (inst) {
@@ -1733,30 +1734,34 @@ void Controller::actionNodeTurtleFunction(Nodes::ActionNode *actionNode) {
             break;
         case 10:
             if (turtlePenDown) break;
+            turtlePenDown = true;
             turtleFile << "pendown()\n";
             break;
         case 11:
             if (!turtlePenDown) break;
+            turtlePenDown = false;
             turtleFile << "penup()\n";
             break;
-        case 13:
+        case 12:
             turtleFile << "pensize(" + pv + ")\n";
             break;
+        case 13:
+            turtleFile << "color('" + colors[pvint] + "')\n";
+            break;
         case 14:
-            turtleFile << "color(" + colors[pvint] + ")\n";
+            turtleFile << "pencolor('" + colors[pvint] + "')\n";
             break;
         case 15:
-            turtleFile << "pencolor(" + colors[pvint] + ")\n";
+            turtleFile << "fillcolor('" + colors[pvint] + "')\n";
             break;
         case 16:
-            turtleFile << "fillcolor(" + colors[pvint] + ")\n";
-            break;
-        case 17:
             if (turtleFilling) break;
+            turtleFilling = true;
             turtleFile << "begin_fill()\n";
             break;
-        case 18:
+        case 17:
             if (!turtleFilling) break;
+            turtleFilling = false;
             turtleFile << "end_fill()\n";
             break;
         default:

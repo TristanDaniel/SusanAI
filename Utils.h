@@ -34,6 +34,16 @@ namespace Flags {
         SECONDARY
     };
 
+    enum class LogicOperatorFlag {
+        NOT,
+        AND,
+        OR,
+        XOR,
+        GREATER,
+        LESSER,
+        SAME_SIGN
+    };
+
 }
 
 namespace ParamPackages {
