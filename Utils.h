@@ -88,7 +88,7 @@ namespace ParamPackages {
 }
 
 namespace DataBits {
-    static const int NUM_NODE_TYPES = 7;
+    static const int NUM_NODE_TYPES = 8;
     static const int NUM_ACTION_TYPES = 7;
     static const int NUM_SYN_TYPES = 2;
     static const int NUM_CONN_TYPES = 5;

@@ -81,7 +81,7 @@ Controller::Controller(const std::string& contName, const bool generateNew, cons
 
         generateInitialController();
         addTurtleInterface();
-        fitness = 100 + ((float)nodes.getNumItems() / 4) + ((float)synapses.getNumItems() / 2);
+        fitness = 100; // + ((float)nodes.getNumItems() / 4) + ((float)synapses.getNumItems() / 2);
     } else {
         initController();
         loadSavedData();
@@ -291,6 +291,26 @@ bool Controller::newNode(unsigned int type, ParamPackages::NodeParams params) {
             id = nodes.getNextID();
 
             n = new Nodes::GatedNode(id);
+
+            n->addFlag(params.basicNodeParams.cycleFlag);
+
+            nodes.addNode(n);
+            nodesWithSecondaryInput.addNode(n);
+            unusedNodes.addNode(n);
+
+            saveActionToFile(n->saveNode());
+
+            //cout << n->saveNode() << endl;
+
+            return true;
+        }
+        case 7:
+        {
+            // logic node
+            id = nodes.getNextID();
+
+            // reusing action type for now, identical possible values, will change later
+            n = new Nodes::LogicNode(id, (Flags::LogicOperatorFlag)params.actionNodeParams.actionType);
 
             n->addFlag(params.basicNodeParams.cycleFlag);
 
@@ -547,35 +567,44 @@ void Controller::getAllOutputs() {
             case Flags::ActionFlag::ADD_NODE:
                 if (unusedNodes.getNumItems() > 15) {
                     actionType = Flags::ActionFlag::DO_NOTHING;
+                    fitness -= 2;
                     break;
                 }
                 actionNodeAddNodeFunction(actionNode);
+                fitness += 5;
                 //turnsSinceStructureChange = 0;
                 break;
             case Flags::ActionFlag::ADD_SYNAPSE:
                 if (unusedSynapses.getNumItems() > 10) {
                     actionType = Flags::ActionFlag::DO_NOTHING;
+                    fitness -= 2;
                     break;
                 }
                 actionNodeAddSynapseFunction(actionNode);
+                fitness += 5;
                 //turnsSinceStructureChange = 0;
                 break;
             case Flags::ActionFlag::MAKE_CONNECTION:
                 if (!actionNodeMakeConnectionFunction(actionNode)) actionType = Flags::ActionFlag::DO_NOTHING;
                 turnsSinceStructureChange = 0;
+                fitness += 4;
                 break;
             case Flags::ActionFlag::SET_FLAG_FOR_NODE:
                 actionNodeSetFlagForNodeFunction(actionNode);
+                fitness += 1;
                 break;
             case Flags::ActionFlag::UPDATE_WEIGHT:
                 actionNodeUpdateWeightFunction(actionNode);
+                fitness += 2;
                 break;
             case Flags::ActionFlag::UPDATE_NODE_VALUE:
                 actionNodeUpdateNodeValueFunction(actionNode);
+                fitness += 2;
                 break;
             case Flags::ActionFlag::TURTLE:
                 if (verboseActionsMode) cout << "turtling" << endl;
                 actionNodeTurtleFunction(actionNode);
+                fitness += 5;
                 break;
         }
 
@@ -809,6 +838,24 @@ void Controller::loadFromFile() {
                     ss >> dropoutFlag;
 
                     n = new Nodes::GatedNode(id);
+
+                    n->addFlag(static_cast<Flags::NodeFlag>(cycleFlag));
+                    n->addFlag(static_cast<Flags::NodeFlag>(dropoutFlag));
+
+                    nodes.addNode(n);
+                    nodesWithSecondaryInput.addNode(n);
+                    unusedNodes.addNode(n);
+                    nodes.checkID(id);
+                } else if (infobit == "+n7") {
+                    // logic node
+                    ss >> id;
+                    ss >> cycleFlag;
+                    ss >> dropoutFlag;
+
+                    int opFlag;
+                    ss >> opFlag;
+
+                    n = new Nodes::LogicNode(id, (Flags::LogicOperatorFlag)opFlag);
 
                     n->addFlag(static_cast<Flags::NodeFlag>(cycleFlag));
                     n->addFlag(static_cast<Flags::NodeFlag>(dropoutFlag));
@@ -1058,6 +1105,7 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
 
 
             addNodeToSynapse(nodeID, uu1, synID, uu2, false);
+            if (uu2 && (node2ID == unusedNodes.getNumItems())) node2ID--;
             success = addSynapseToNode(synID, uu2, node2ID, uu3, false);
             break;
         }
@@ -1167,12 +1215,12 @@ void Controller::generateInitialController() {
     const int nodesPerInputHiddenLayer = (int)LDRandomInt(1,6);
     const int firstInputHiddenLayerStartID = startID + baseInputs;
     // main hidden layers
-    const int hiddenLayers = (int)LDRandomInt(1,6);
-    const int nodesPerHiddenLayer = 2 * (int)LDRandomInt(2,15);
+    const int hiddenLayers = (int)LDRandomInt(1,4);
+    const int nodesPerHiddenLayer = 2 * (int)LDRandomInt(2,10);
     const int firstHiddenLayerStartID = firstInputHiddenLayerStartID
             + (nodesPerInputHiddenLayer * baseInputHiddenLayers);
     // output params inputs split layer
-    const int nodesToOutputParams = (int)LDRandomInt(5,15);
+    const int nodesToOutputParams = (int)LDRandomInt(5,10);
     const int nodesToOutputParamsStartID = firstHiddenLayerStartID
             + (nodesPerHiddenLayer * hiddenLayers);
     const int nodesToOutputFiringThreshold = (int)LDRandomInt(2,5);
@@ -1432,29 +1480,29 @@ float Controller::calcFitness() {
     int netSize = nodes.getNumItems() + synapses.getNumItems();
     int totalUU = unusedNodes.getNumItems() + unusedSynapses.getNumItems();
 
-    fitness = 100 + ((float)nodes.getNumItems() / 4) + ((float)synapses.getNumItems() / 2);
-    fitness -= (float)(unusedNodes.getNumItems() + unusedSynapses.getNumItems())
-                * ((float)turnsSinceStructureChange + 1)
-                * (((float)totalUU / (float)netSize) > 0.1 ? 10.f : 1);
-    if (lastActionType4 + 0.25 >= actionTypeAvg.getAverage()
-        && lastActionType4 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 2 * (float)turnsSinceStructureChange;
-    if (lastActionType5 + 0.25 >= actionTypeAvg.getAverage()
-        && lastActionType5 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 2 * (float)turnsSinceStructureChange;
-    fitness -= 5 * (float)turnsSinceStructureChange;
-    fitness += (float)fitDecTurns;
-    fitness -= (float)fitIncrTurns * 5;
+//    fitness = 100 + ((float)nodes.getNumItems() / 4) + ((float)synapses.getNumItems() / 2);
+//    fitness -= (float)(unusedNodes.getNumItems() + unusedSynapses.getNumItems())
+//                * ((float)turnsSinceStructureChange + 1)
+//                * (((float)totalUU / (float)netSize) > 0.1 ? 10.f : 1);
+//    if (lastActionType4 + 0.25 >= actionTypeAvg.getAverage()
+//        && lastActionType4 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 2 * (float)turnsSinceStructureChange;
+//    if (lastActionType5 + 0.25 >= actionTypeAvg.getAverage()
+//        && lastActionType5 - 0.25 <= actionTypeAvg.getAverage()) fitness -= 2 * (float)turnsSinceStructureChange;
+    fitness -= 0.5f * (float)turnsSinceStructureChange;
+    //fitness += (float)fitDecTurns;
+    //fitness -= (float)fitIncrTurns * 5;
     if (lastActionType4 == 0) {
         timesDoneNothing++;
     }
     if (lastActionType5 == 0) {
         timesDoneNothing++;
     }
-    fitness -= 5 * (float)timesDoneNothing;
-    fitness -= 2 * (float)ag1repeatTurns;
-    fitness -= 2 * (float)ag2repeatTurns;
+    // fitness -= 2 * (float)timesDoneNothing;
+    //fitness -= 2 * (float)ag1repeatTurns;
+    //fitness -= 2 * (float)ag2repeatTurns;
 
 
-    fitness = max(-1000000.f, min((float)fitness, 1000000.f));
+    //fitness = max(-1000000.f, min((float)fitness, 1000000.f));
 
     //fitness = getFitnessFitnessImpact();
     //fitness -= getTurnAndStructureFitnessImpact();
@@ -1683,7 +1731,7 @@ void Controller::actionNodeTurtleFunction(Nodes::ActionNode *actionNode) {
     auto node = dynamic_cast<Nodes::TurtleNode*>(actionNode);
 
     int inst = node->getInstruction();
-    cout << inst << endl;
+    //cout << inst << endl;
     if (inst < 0) return;
     int pvint = node->getParamValue();
     string pv = to_string(pvint);

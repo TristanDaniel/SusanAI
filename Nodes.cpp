@@ -908,4 +908,97 @@ Synapses::Synapse* NodeWithSecondaryInput::getSecondaryInput() { return secondar
 
 float Fireable::getThreshold() const { return fireThreshold; }
 
+LogicNode::LogicNode(unsigned int i, Flags::LogicOperatorFlag opFlag) : NodeWithSecondaryInput(i) {
+    operatorFlag = opFlag;
+
+    switch (opFlag) {
+        case Flags::LogicOperatorFlag::NOT:
+            baseColor = "darkorchid4";
+            break;
+        case Flags::LogicOperatorFlag::AND:
+            baseColor = "darkorchid3";
+            break;
+        case Flags::LogicOperatorFlag::OR:
+            baseColor = "darkorchid2";
+            break;
+        case Flags::LogicOperatorFlag::XOR:
+            baseColor = "darkorchid1";
+            break;
+        case Flags::LogicOperatorFlag::GREATER:
+            baseColor = "mediumorchid2";
+            break;
+        case Flags::LogicOperatorFlag::LESSER:
+            baseColor = "mediumorchid1";
+            break;
+        case Flags::LogicOperatorFlag::SAME_SIGN:
+            baseColor = "orchid2";
+            break;
+    }
+}
+
+string GatedNode::saveNode() {
+    return "+n6 " + to_string(getID()) + " " + getFlagListString() + " ";
+}
+
+string LogicNode::saveNode() {
+    return "+n7 " + to_string(getID()) + " " + getFlagListString() + " " + to_string((int)operatorFlag) + " ";
+}
+
+float LogicNode::getValue(unsigned long long curTurn) {
+    if (secondaryInput == nullptr || checkingSecondaryInput) {
+        lastValue = 0;
+        value = 0;
+        return 0;
+    }
+
+    checkingSecondaryInput = true;
+
+    float secVal = secondaryInput->getData(curTurn);
+
+    checkingSecondaryInput = false;
+
+    float baseVal, finalVal = 0;
+
+    switch (operatorFlag) {
+        case Flags::LogicOperatorFlag::NOT:
+            baseVal = NotInputNode::getValue(curTurn);
+            if (secVal > 0) finalVal = baseVal * -1;
+            else finalVal = baseVal;
+            break;
+        case Flags::LogicOperatorFlag::AND:
+            if ((secVal > 0) && (NotInputNode::getValue(curTurn) > 0)) finalVal = 1;
+            else finalVal = -1;
+            break;
+        case Flags::LogicOperatorFlag::OR:
+            if ((secVal > 0) || (NotInputNode::getValue(curTurn) > 0)) finalVal = 1;
+            else finalVal = -1;
+            break;
+        case Flags::LogicOperatorFlag::XOR:
+        {
+            baseVal = NotInputNode::getValue(curTurn);
+            bool A = secVal > 0;
+            bool B = baseVal > 0;
+            if ((A || B) && (A != B)) finalVal = 1;
+            else finalVal = -1;
+            break;
+        }
+        case Flags::LogicOperatorFlag::GREATER:
+            if (NotInputNode::getValue(curTurn) > secVal) finalVal = 1;
+            else finalVal = -1;
+            break;
+        case Flags::LogicOperatorFlag::LESSER:
+            if (NotInputNode::getValue(curTurn) < secVal) finalVal = 1;
+            else finalVal = -1;
+            break;
+        case Flags::LogicOperatorFlag::SAME_SIGN:
+            if ((secVal > 0) == (NotInputNode::getValue(curTurn) > 0)) finalVal = 1;
+            else finalVal = -1;
+            break;
+    }
+
+    lastValue = finalVal;
+    value = finalVal;
+
+    return finalVal;
+}
 

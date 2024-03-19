@@ -63,7 +63,10 @@ void Synapse::totalSave(std::ofstream& saveFile, std::ofstream& graphFile) {
     saveFile << saveSynapse();
 
     if (input != nullptr) saveFile << ">ns " + to_string(input->getID()) + " " + to_string(id) + " ";
-    if (output != nullptr) saveFile << ">sn " + to_string(id) + " " + to_string(output->getID()) + " ";
+    if (output != nullptr && outputTypeFlag != Flags::SynapseOutputTypeFlag::SECONDARY)
+        saveFile << ">sn " + to_string(id) + " " + to_string(output->getID()) + " ";
+    else if (output != nullptr && outputTypeFlag == Flags::SynapseOutputTypeFlag::SECONDARY)
+        saveFile << ">sn2 " + to_string(id) + " " + to_string(output->getID()) + " ";
 
 //    if (input && output) {
 //        graphFile << "\"" + to_string(input->getID()) + "\" -> \"" + to_string(output->getID()) + "\"\n";

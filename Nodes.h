@@ -403,6 +403,8 @@ namespace Nodes {
         // void graphSave(std::ofstream& graphFile) override;
 
         float getValue(unsigned long long int curTurn) override;
+
+        std::string saveNode() override;
     };
 
     class LogicNode : public NodeWithSecondaryInput {
@@ -414,6 +416,8 @@ namespace Nodes {
         LogicNode(unsigned int i, Flags::LogicOperatorFlag opFlag);
 
         float getValue(unsigned long long int curTurn) override;
+
+        std::string saveNode() override;
     };
 
 
