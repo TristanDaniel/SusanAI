@@ -1105,7 +1105,7 @@ bool Controller::actionNodeMakeConnectionFunction(Nodes::ActionNode *actionNode)
 
 
             addNodeToSynapse(nodeID, uu1, synID, uu2, false);
-            if (uu2 && (node2ID == unusedNodes.getNumItems())) node2ID--;
+            if (uu3 && (node2ID == unusedNodes.getNumItems())) node2ID--;
             success = addSynapseToNode(synID, uu2, node2ID, uu3, false);
             break;
         }
@@ -1210,31 +1210,31 @@ void Controller::generateInitialController() {
 
     const int startID = 11;
     // base inputs
-    const int baseInputs = 2 * (int)LDRandomInt(1,3); // split 50/50 between random and static
-    const int baseInputHiddenLayers = (int)LDRandomInt(1,4);
-    const int nodesPerInputHiddenLayer = (int)LDRandomInt(1,6);
+    const int baseInputs = 2 * (int)LDRandomInt(1,2); // split 50/50 between random and static
+    const int baseInputHiddenLayers = (int)LDRandomInt(1,2);
+    const int nodesPerInputHiddenLayer = (int)LDRandomInt(2,3);
     const int firstInputHiddenLayerStartID = startID + baseInputs;
     // main hidden layers
-    const int hiddenLayers = (int)LDRandomInt(1,4);
-    const int nodesPerHiddenLayer = 2 * (int)LDRandomInt(2,10);
+    const int hiddenLayers = (int)LDRandomInt(1,2);
+    const int nodesPerHiddenLayer = 2 * (int)LDRandomInt(2,3);
     const int firstHiddenLayerStartID = firstInputHiddenLayerStartID
             + (nodesPerInputHiddenLayer * baseInputHiddenLayers);
     // output params inputs split layer
-    const int nodesToOutputParams = (int)LDRandomInt(5,10);
+    const int nodesToOutputParams = (int)LDRandomInt(3,6);
     const int nodesToOutputParamsStartID = firstHiddenLayerStartID
             + (nodesPerHiddenLayer * hiddenLayers);
-    const int nodesToOutputFiringThreshold = (int)LDRandomInt(2,5);
+    const int nodesToOutputFiringThreshold = (int)LDRandomInt(2,3);
     const int nodesToOutFireThreshStartID = nodesToOutputParamsStartID + nodesToOutputParams;
     // output params layer
     const int totalOutputParams = 25;
     const int outputParamNodesStartID = nodesToOutFireThreshStartID + nodesToOutputFiringThreshold;
-    const int firingThresholdNodes = (int)LDRandomInt(2,4);
+    const int firingThresholdNodes = (int)LDRandomInt(2,3);
     const int firingThresholdNodesStartID = outputParamNodesStartID + totalOutputParams;
     // outputs
     const int actionOutputs = 6;
     const int actionOutputsStartID = firingThresholdNodesStartID + firingThresholdNodes;
     // extras to play with
-    const int extraOutputs = 5;
+    const int extraOutputs = 2;
     const int extraOutputsStartID = actionOutputsStartID + actionOutputs;
 
     //// temp variables ////
