@@ -142,6 +142,9 @@ void Node::addFlag(Flags::NodeFlag f) {
             cycleFlag = f;
             break;
         case NodeFlag::NO_DROPOUT:
+            dropoutFlag = f;
+            dropoutChance = 0;
+            break;
         case Flags::NodeFlag::DROPOUT_20:
             dropoutFlag = f;
             dropoutChance = 0.2;
@@ -828,6 +831,8 @@ void TurtleNode::getOutput(unsigned long long int curTurn) {
             paramValue =  (int)(abs(pv) * 361) % 361;
             break;
         case 8:
+            paramValue =  1 + (int)(abs(pv) * 30) % 30;
+            break;
         case 9:
         case 12:
             paramValue =  1 + (int)(abs(pv) * 10) % 10;

@@ -1210,25 +1210,25 @@ void Controller::generateInitialController() {
 
     const int startID = 11;
     // base inputs
-    const int baseInputs = 2 * (int)LDRandomInt(1,2); // split 50/50 between random and static
-    const int baseInputHiddenLayers = (int)LDRandomInt(1,2);
-    const int nodesPerInputHiddenLayer = (int)LDRandomInt(2,3);
+    const int baseInputs = 2 * (int)LDRandomInt(1,3); // split 50/50 between random and static
+    const int baseInputHiddenLayers = (int)LDRandomInt(1,4);
+    const int nodesPerInputHiddenLayer = (int)LDRandomInt(2,5);
     const int firstInputHiddenLayerStartID = startID + baseInputs;
     // main hidden layers
-    const int hiddenLayers = (int)LDRandomInt(1,2);
-    const int nodesPerHiddenLayer = 2 * (int)LDRandomInt(2,3);
+    const int hiddenLayers = (int)LDRandomInt(1,4);
+    const int nodesPerHiddenLayer = 2 * (int)LDRandomInt(4,6);
     const int firstHiddenLayerStartID = firstInputHiddenLayerStartID
             + (nodesPerInputHiddenLayer * baseInputHiddenLayers);
     // output params inputs split layer
-    const int nodesToOutputParams = (int)LDRandomInt(3,6);
+    const int nodesToOutputParams = (int)LDRandomInt(5,8);
     const int nodesToOutputParamsStartID = firstHiddenLayerStartID
             + (nodesPerHiddenLayer * hiddenLayers);
-    const int nodesToOutputFiringThreshold = (int)LDRandomInt(2,3);
+    const int nodesToOutputFiringThreshold = (int)LDRandomInt(2,4);
     const int nodesToOutFireThreshStartID = nodesToOutputParamsStartID + nodesToOutputParams;
     // output params layer
     const int totalOutputParams = 25;
     const int outputParamNodesStartID = nodesToOutFireThreshStartID + nodesToOutputFiringThreshold;
-    const int firingThresholdNodes = (int)LDRandomInt(2,3);
+    const int firingThresholdNodes = (int)LDRandomInt(2,4);
     const int firingThresholdNodesStartID = outputParamNodesStartID + totalOutputParams;
     // outputs
     const int actionOutputs = 6;
@@ -1580,7 +1580,7 @@ void Controller::makeStandardLayer(const int layerStartID, const int nodesInLaye
 
     for (int nodeID = layerStartID; nodeID < layerStartID + nodesInLayer; nodeID++) {
         node = new Nodes::NotInputNode(nodeID);
-        node->addFlag(Flags::NodeFlag::DROPOUT_20);
+        node->addFlag(Flags::NodeFlag::NO_DROPOUT);
 
         saveActionToFile(node->saveNode());
 
