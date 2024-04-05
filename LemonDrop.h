@@ -23,6 +23,15 @@ namespace LemonDrop {
         Handlers::NodeHandler unusedNodes;
         Handlers::NodeHandler nodesWithSecondaryInput;
 
+        Nodes::Output* wordleGuessOutputs[5];
+        Nodes::Input* wordlePreviousGuessInputs[5][2];
+        Nodes::Input* wordlePreviousGuessValidIndicatorInput;
+        Nodes::Input* wordlePreviousGuessesInputs[5][5][2];
+
+        int wordleTurn;
+        std::string wordleTargetWord;
+        std::vector<std::string> wordleWordList;
+
         std::vector<UtilClasses::ActionGroup*> actionGroups;
         UtilClasses::ActionGroup baseAG1, baseAG2, extraAG, turtleAG;
 
@@ -116,6 +125,10 @@ namespace LemonDrop {
         void createAndConnectUniformRepeatedLayers(int firstLayerStartID, int nodesPerLayer, int layers);
 
         void loop();
+
+        void initWordle();
+        void resetWordleGame();
+        void checkWordleTurn();
 
     public:
         Controller();

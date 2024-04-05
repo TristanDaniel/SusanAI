@@ -900,7 +900,7 @@ float GatedNode::getValue(unsigned long long curTurn) {
 
     checkingSecondaryInput = false;
 
-    if (secVal < 0) {
+    if (secVal <= 0) {
         lastValue = 0;
         value = 0;
         return 0;

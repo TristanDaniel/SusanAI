@@ -7,6 +7,7 @@
 #include <random>
 #include <cmath>
 #include <filesystem>
+#include <algorithm>
 
 #include "LemonDrop.h"
 #include "Utils.h"
@@ -80,7 +81,8 @@ Controller::Controller(const std::string& contName, const bool generateNew, cons
         }
 
         generateInitialController();
-        addTurtleInterface();
+        //addTurtleInterface();
+        initWordle();
         fitness = 100; // + ((float)nodes.getNumItems() / 4) + ((float)synapses.getNumItems() / 2);
     } else {
         initController();
@@ -567,39 +569,39 @@ void Controller::getAllOutputs() {
             case Flags::ActionFlag::ADD_NODE:
                 if (unusedNodes.getNumItems() > 15) {
                     actionType = Flags::ActionFlag::DO_NOTHING;
-                    fitness -= 2;
+                    //fitness -= 2;
                     break;
                 }
                 actionNodeAddNodeFunction(actionNode);
-                fitness += 5;
+                //fitness += 5;
                 //turnsSinceStructureChange = 0;
                 break;
             case Flags::ActionFlag::ADD_SYNAPSE:
                 if (unusedSynapses.getNumItems() > 10) {
                     actionType = Flags::ActionFlag::DO_NOTHING;
-                    fitness -= 2;
+                    //fitness -= 2;
                     break;
                 }
                 actionNodeAddSynapseFunction(actionNode);
-                fitness += 5;
+                //fitness += 5;
                 //turnsSinceStructureChange = 0;
                 break;
             case Flags::ActionFlag::MAKE_CONNECTION:
                 if (!actionNodeMakeConnectionFunction(actionNode)) actionType = Flags::ActionFlag::DO_NOTHING;
                 turnsSinceStructureChange = 0;
-                fitness += 4;
+                //fitness += 4;
                 break;
             case Flags::ActionFlag::SET_FLAG_FOR_NODE:
                 actionNodeSetFlagForNodeFunction(actionNode);
-                fitness += 1;
+                //fitness += 1;
                 break;
             case Flags::ActionFlag::UPDATE_WEIGHT:
                 actionNodeUpdateWeightFunction(actionNode);
-                fitness += 2;
+                //fitness += 2;
                 break;
             case Flags::ActionFlag::UPDATE_NODE_VALUE:
                 actionNodeUpdateNodeValueFunction(actionNode);
-                fitness += 2;
+                //fitness += 2;
                 break;
             case Flags::ActionFlag::TURTLE:
                 if (verboseActionsMode) cout << "turtling" << endl;
@@ -648,6 +650,7 @@ void Controller::mainLoop(const int turnLimit) {
     turn = 0;
     while (turn < turnLimit) {
         loop();
+        checkWordleTurn();
     }
 
     std::ofstream saveFile("..\\" + name + "_data.txt");
@@ -1276,7 +1279,7 @@ void Controller::generateInitialController() {
     // hidden layers and connect inputs //
     makeStandardLayer(firstHiddenLayerStartID, nodesPerHiddenLayer);
     saveActionToFile("\n");
-    connectTwoLayers(0, startID, firstHiddenLayerStartID, nodesPerHiddenLayer);
+    //connectTwoLayers(0, startID, firstHiddenLayerStartID, nodesPerHiddenLayer);
     connectTwoLayers(firstHiddenLayerStartID - nodesPerInputHiddenLayer, nodesPerInputHiddenLayer, firstHiddenLayerStartID, nodesPerHiddenLayer);
     saveActionToFile("\n");
     createAndConnectUniformRepeatedLayers(firstHiddenLayerStartID, nodesPerHiddenLayer, hiddenLayers);
@@ -1401,6 +1404,88 @@ void Controller::generateInitialController() {
     nodes.addNode(n);
     nodesWithSecondaryInput.addNode(n);
     unusedNodes.addNode(n);
+
+
+    //// wordle stuff ////
+
+    // prev guess
+    for (int i = 0; i < 5; i++) {
+        wordlePreviousGuessInputs[i][0] = new Nodes::Input(nodes.getNextID());
+        wordlePreviousGuessInputs[i][1] = new Nodes::Input(nodes.getNextID());
+
+        nodes.addNode(wordlePreviousGuessInputs[i][0]);
+        nodes.addNode(wordlePreviousGuessInputs[i][1]);
+    }
+
+    auto* wordleInputsSummerNode = new Nodes::NotInputNode(nodes.getNextID());
+    nodes.addNode(wordleInputsSummerNode);
+    for (int i = 0; i < 5; i++) {
+        auto* synapse = new Synapses::PassthroughSynapse(0);
+
+        synapse->setInput(wordlePreviousGuessInputs[i][0]);
+        wordleInputsSummerNode->addSynapse(synapse);
+    }
+
+    auto* neg1Node = new Nodes::Input(nodes.getNextID());
+    neg1Node->setValue(-1);
+    nodes.addNode(neg1Node);
+
+    auto* notNode = new Nodes::LogicNode(nodes.getNextID(), Flags::LogicOperatorFlag::NOT);
+    nodes.addNode(notNode);
+    auto* neg1ToNotSyn = new Synapses::PassthroughSynapse(0);
+    auto* sumToNotSyn = new Synapses::PassthroughSynapse(0);
+
+    neg1ToNotSyn->setInput(neg1Node);
+    sumToNotSyn->setInput(wordleInputsSummerNode);
+
+    notNode->addSynapse(neg1ToNotSyn);
+    notNode->setSecondaryInput(sumToNotSyn);
+
+    auto* wordleRandInput = new Nodes::RandomInput(nodes.getNextID(), 2);
+    nodes.addNode(wordleRandInput);
+    auto* wordleRandGate = new Nodes::GatedNode(nodes.getNextID());
+    nodes.addNode(wordleRandGate);
+
+    auto* randToGateSyn = new Synapses::PassthroughSynapse(0);
+    auto* notToGateSyn = new Synapses::PassthroughSynapse(0);
+
+    randToGateSyn->setInput(wordleRandInput);
+    notToGateSyn->setInput(notNode);
+
+    wordleRandGate->addSynapse(randToGateSyn);
+    wordleRandGate->setSecondaryInput(notToGateSyn);
+
+    wordlePreviousGuessValidIndicatorInput = new Nodes::Input(nodes.getNextID());
+    nodes.addNode(wordlePreviousGuessValidIndicatorInput);
+
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            wordlePreviousGuessesInputs[i][j][0] = new Nodes::Input(nodes.getNextID());
+            wordlePreviousGuessesInputs[i][j][1] = new Nodes::Input(nodes.getNextID());
+
+            nodes.addNode(wordlePreviousGuessesInputs[i][j][0]);
+            nodes.addNode(wordlePreviousGuessesInputs[i][j][1]);
+        }
+    }
+
+    for (int i = 0; i < 5; i++) {
+        wordleGuessOutputs[i] = new Nodes::Output(nodes.getNextID());
+
+        nodes.addNode(wordleGuessOutputs[i]);
+        outputs.addNode(wordleGuessOutputs[i]);
+    }
+
+    connectTwoLayers((int)wordleRandGate->getID(), 1,
+                     firstHiddenLayerStartID, nodesPerHiddenLayer);
+    connectTwoLayers((int)wordlePreviousGuessInputs[0][0]->getID(), 10,
+                     firstHiddenLayerStartID, nodesPerHiddenLayer);
+    connectTwoLayers((int)wordlePreviousGuessValidIndicatorInput->getID(), 1,
+                     firstHiddenLayerStartID, nodesPerHiddenLayer);
+    connectTwoLayers((int)wordlePreviousGuessesInputs[0][0][0]->getID(), 50,
+                     firstHiddenLayerStartID, nodesPerHiddenLayer);
+    connectTwoLayers(finalHiddenLayerStartID, nodesPerHiddenLayer,
+                     (int)wordleGuessOutputs[0]->getID(), 5);
+    ///////////////////////
 }
 
 float Controller::getUnusedPartFitnessImpact() {
@@ -1526,7 +1611,8 @@ void Controller::setMetricInputs() {
     unusedSynsInput->setValue(UtilFunctions::sigmoid((float)unusedSynapses.getNumItems()));
     networkSizeInput->setValue(UtilFunctions::sigmoid((float)nodes.getNumItems() + (float)synapses.getNumItems()));
 
-    fitnessInput->setValue(UtilFunctions::sigmoid(calcFitness()));
+//    fitnessInput->setValue(UtilFunctions::sigmoid(calcFitness()));
+    fitnessInput->setValue(UtilFunctions::sigmoid(fitness));
     fitnessDeltaInput->setValue(UtilFunctions::sigmoid(fitnessDelta));
     fitnessAvgInput->setValue(UtilFunctions::sigmoid(fitnessAvg.getAverage()));
     turnsSinceFitnessDecInput->setValue(UtilFunctions::sigmoid((float)fitDecTurns));
@@ -1837,5 +1923,119 @@ void Controller::addTurtleInterface() {
     connectTwoLayers((int)turtleNode->getID() - 4, 4, (int)turtleNode->getID(), 1);
 }
 
+void Controller::initWordle() {
+    std::ifstream wordList("..\\word_list.txt");
+
+    if (wordList.is_open()) {
+        string line, word;
+
+        while (getline(wordList, line)) {
+            stringstream ss(line);
+
+            while (!ss.eof()) {
+                ss >> word;
+                wordleWordList.push_back(word);
+            }
+        }
+    }
+
+    wordList.close();
+
+    wordleTurn = 0;
+
+    wordleTargetWord = wordleWordList[(unsigned long long)UtilFunctions::LDRandomInt(0, (int)wordleWordList.size())];
+}
+
+void Controller::resetWordleGame() {
+    wordleTurn = 0;
+    wordleTargetWord = wordleWordList[(unsigned long long)UtilFunctions::LDRandomInt(0, (int)wordleWordList.size())];
+    cout << "New target: " << wordleTargetWord << endl;
+
+    for (int i = 0; i < 5; i++) {
+        wordlePreviousGuessInputs[i][0]->setValue(0);
+        wordlePreviousGuessInputs[i][1]->setValue(0);
+    }
+    wordlePreviousGuessValidIndicatorInput->setValue(0);
+
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            wordlePreviousGuessesInputs[i][j][0]->setValue(0);
+            wordlePreviousGuessesInputs[i][j][1]->setValue(0);
+        }
+    }
+}
+
+void Controller::checkWordleTurn() {
+    string guessedWord;
+    float chars[5];
+
+    cout << "Target: " << wordleTargetWord << endl;
+
+    // a = 97
+    for (int i = 0; i < 5; i++) {
+        float val = abs(wordleGuessOutputs[i]->getValue(turn));
+        int boundedVal = (int(val * 26) % 26) + 97;
+
+        guessedWord += (char)boundedVal;
+        chars[i] = UtilFunctions::sigmoid(val);
+    }
+
+    cout << "Guessed: " << guessedWord << endl;
+
+    if (wordleTargetWord == guessedWord) {
+        cout << "Correct!" << endl;
+        fitness += float(500 * (6 - wordleTurn));
+        resetWordleGame();
+    }
+
+    if (find(wordleWordList.begin(), wordleWordList.end(), guessedWord) != wordleWordList.end()) {
+        cout << "Valid!" << endl;
+        fitness += 15;
+
+        for (int i = 0; i < 5; i++) {
+            wordlePreviousGuessesInputs[wordleTurn][i][0]->setValue(chars[i]);
+        }
+
+        int score = 0;
+        string targetClone(wordleTargetWord);
+        for (int i = 0; i < 5; i++) {
+            if (targetClone[i] == guessedWord[i]) {
+                score += 2;
+                targetClone[i] = '-';
+                wordlePreviousGuessInputs[i][1]->setValue(1);
+                wordlePreviousGuessesInputs[wordleTurn][i][1]->setValue(1);
+            }
+        }
+
+        for (int i = 0; i < 5; i++) {
+            if (targetClone.find(guessedWord[i]) != string::npos) {
+                score += 1;
+                targetClone[i] = '-';
+                wordlePreviousGuessInputs[i][1]->setValue(-1);
+                wordlePreviousGuessesInputs[wordleTurn][i][1]->setValue(-1);
+            } else {
+                wordlePreviousGuessInputs[i][1]->setValue(0);
+                wordlePreviousGuessesInputs[wordleTurn][i][1]->setValue(0);
+            }
+        }
+
+        cout << "Score: " << score << endl;
+        fitness += float (score * (6 - wordleTurn));
+
+        wordleTurn++;
+    } else {
+        cout << "Invalid!" << endl;
+        fitness -= 5;
+        wordlePreviousGuessValidIndicatorInput->setValue(-1);
+
+        for (int i = 0; i < 5; i++) {
+            wordlePreviousGuessInputs[i][1]->setValue(0);
+        }
+    }
+
+    for (int i = 0; i < 5; i++) {
+        wordlePreviousGuessInputs[i][0]->setValue(chars[i]);
+    }
+}
 
 
