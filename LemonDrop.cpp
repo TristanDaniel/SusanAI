@@ -648,9 +648,20 @@ void Controller::loop() {
 }
 void Controller::mainLoop(const int turnLimit) {
     turn = 0;
+
+    auto start = chrono::high_resolution_clock::now();
+
     while (turn < turnLimit) {
         loop();
         checkWordleTurn();
+
+        auto curr = chrono::high_resolution_clock::now();
+        auto elapsed = chrono::duration_cast<chrono::seconds>(curr - start);
+
+        if (elapsed.count() > (turnLimit / 3)) {
+            fitness -= 100000;
+            break;
+        }
     }
 
     std::ofstream saveFile("..\\" + name + "_data.txt");
@@ -662,6 +673,18 @@ void Controller::mainLoop(const int turnLimit) {
     saveFile << to_string(actionTypeAvg.getAverage()) << endl;
     saveFile << to_string(turnsSinceStructureChange) << endl;
     saveFile << to_string(timesDoneNothing) << endl;
+
+    saveFile << to_string(wordlePreviousGuessValidIndicatorInput->getID()) << endl;
+    for (int i = 0; i < 5; i++) {
+        saveFile << to_string(wordleGuessOutputs[i]->getID()) << endl;
+        saveFile << to_string(wordlePreviousGuessInputs[i][0]->getID()) << endl;
+        saveFile << to_string(wordlePreviousGuessInputs[i][1]->getID()) << endl;
+
+        for (int j = 0; j < 5; j++) {
+            saveFile << to_string(wordlePreviousGuessesInputs[i][j][0]->getID()) << endl;
+            saveFile << to_string(wordlePreviousGuessesInputs[i][j][1]->getID()) << endl;
+        }
+    }
 }
 
 
@@ -1279,7 +1302,7 @@ void Controller::generateInitialController() {
     // hidden layers and connect inputs //
     makeStandardLayer(firstHiddenLayerStartID, nodesPerHiddenLayer);
     saveActionToFile("\n");
-    //connectTwoLayers(0, startID, firstHiddenLayerStartID, nodesPerHiddenLayer);
+    connectTwoLayers(0, startID, firstHiddenLayerStartID, nodesPerHiddenLayer);
     connectTwoLayers(firstHiddenLayerStartID - nodesPerInputHiddenLayer, nodesPerInputHiddenLayer, firstHiddenLayerStartID, nodesPerHiddenLayer);
     saveActionToFile("\n");
     createAndConnectUniformRepeatedLayers(firstHiddenLayerStartID, nodesPerHiddenLayer, hiddenLayers);
@@ -1786,6 +1809,7 @@ void Controller::loadSavedData() {
     std::ifstream loadFile("..\\" + name + "_data.txt");
 
     loadFile >> fitness;
+    fitness = 100;
     prevFitness = fitness;
     for (int i = 0; i < fitAvgTurns; i++) {
         fitnessAvg.addValue(fitness);
@@ -1809,6 +1833,27 @@ void Controller::loadSavedData() {
     }
 
     loadFile >> turnsSinceStructureChange;
+    loadFile >> timesDoneNothing;
+
+    int id;
+    loadFile >> id;
+    wordlePreviousGuessValidIndicatorInput = dynamic_cast<Nodes::Input *>(nodes.getNodeByID(id));
+
+    for (int i = 0; i < 5; i++) {
+        loadFile >> id;
+        wordleGuessOutputs[i] = dynamic_cast<Nodes::Output *>(nodes.getNodeByID(id));
+        loadFile >> id;
+        wordlePreviousGuessInputs[i][0] = dynamic_cast<Nodes::Input *>(nodes.getNodeByID(id));
+        loadFile >> id;
+        wordlePreviousGuessInputs[i][1] = dynamic_cast<Nodes::Input *>(nodes.getNodeByID(id));
+
+        for (int j = 0; j < 5; j++) {
+            loadFile >> id;
+            wordlePreviousGuessesInputs[i][j][0] = dynamic_cast<Nodes::Input *>(nodes.getNodeByID(id));
+            loadFile >> id;
+            wordlePreviousGuessesInputs[i][j][1] = dynamic_cast<Nodes::Input *>(nodes.getNodeByID(id));
+        }
+    }
 
     loadFile.close();
 }
@@ -1969,7 +2014,7 @@ void Controller::checkWordleTurn() {
     string guessedWord;
     float chars[5];
 
-    cout << "Target: " << wordleTargetWord << endl;
+    //cout << "Target: " << wordleTargetWord << endl;
 
     // a = 97
     for (int i = 0; i < 5; i++) {
@@ -1980,16 +2025,24 @@ void Controller::checkWordleTurn() {
         chars[i] = UtilFunctions::sigmoid(val);
     }
 
-    cout << "Guessed: " << guessedWord << endl;
+    //cout << "Guessed: " << guessedWord << endl;
 
     if (wordleTargetWord == guessedWord) {
-        cout << "Correct!" << endl;
+        cout << "Correct! Guessed: " << guessedWord << endl;
         fitness += float(500 * (6 - wordleTurn));
         resetWordleGame();
+        return;
+    }
+
+    if (wordleTurn == 5) {
+        fitness += 100;
+        cout << "Last turn fail! Guessed: " << guessedWord << endl;
+        resetWordleGame();
+        return;
     }
 
     if (find(wordleWordList.begin(), wordleWordList.end(), guessedWord) != wordleWordList.end()) {
-        cout << "Valid!" << endl;
+        cout << "Valid! Guessed: " << guessedWord << ", Target: " << wordleTargetWord << endl;
         fitness += 15;
 
         for (int i = 0; i < 5; i++) {
@@ -2024,7 +2077,7 @@ void Controller::checkWordleTurn() {
 
         wordleTurn++;
     } else {
-        cout << "Invalid!" << endl;
+        //cout << "Invalid!" << endl;
         fitness -= 5;
         wordlePreviousGuessValidIndicatorInput->setValue(-1);
 
